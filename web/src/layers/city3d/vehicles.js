@@ -45,6 +45,7 @@ export const TRAINS3D_ID = 'tk3d-trains';
 export const CAR_L = 19.5, CAR_GAP = 0.8, CAR_W = 2.95, CAR_H = 3.7, LIFT = 0.4, LEFT_M = 0;
 export const MIN_W_PX = 7, K_MAX = 8, HEIGHT_GAIN = 0.6;
 export const UNDER_M = -2;                 // a car this far below ground is underground
+export const OVER_ST_M = 3.5;   // jaktrack: a station this far up is drawn on its deck (viaduct.js MIN_H: where a deck stands)
 export const OVER_M = 1, OVER_LIFT = 0.45;  // track this far up gets its line's colour along the deck top, a little above it
 const FAINT_SURFACE = 0.32, FAINT_UNDER = 0.3, VEIL = [0.962, 0.966, 0.973, 0.72];
 const FAINT_SURFACE_UG = 0.05;            // surface trains in the underground view: a whisper of grey (they were 0.16: noise)
@@ -135,13 +136,15 @@ void main() {
 // #AAAAB0) but the picked one (u_pick), which wears its colour; the underground view (u_grey 0) shows every colour
 const RFS = `#version 300 es
 precision highp float;
-in vec4 v_col; uniform float u_white; uniform float u_grey; uniform float u_pick; out vec4 o;
+in vec4 v_col; uniform float u_white; uniform float u_grey; uniform float u_pick; uniform float u_only; out vec4 o;
 void main() {
   float picked = abs(v_col.a - u_pick) < 0.5 ? 1.0 : 0.0;
+  if (u_only > 0.5 && picked < 0.5) discard;   // jaktrack: the picked line alone (its wide pass on the deck top)
   vec3 c = mix(vec3(0.667, 0.667, 0.69), v_col.rgb, max(picked, 1.0 - u_grey));
   o = vec4(mix(c, vec3(1.0), u_white), 1.0);
 }`;
-// the underground view's stations: a white dot with a grey ring at each underground platform's depth
+// jaktrack: the elevated stations: a white dot with a ring (u_ring: grey at rest, the line's colour when picked) on the
+// deck top, where the 2D map's station dot would otherwise lie on the ground under the viaduct
 const PVS = `#version 300 es
 precision highp float;
 layout(location=0) in vec3 a_p;
@@ -149,12 +152,13 @@ uniform mat4 u_m; uniform float u_size;
 void main() { gl_Position = u_m * vec4(a_p, 1.0); gl_PointSize = u_size; }`;
 const PFS = `#version 300 es
 precision highp float;
+uniform vec3 u_ring;
 out vec4 o;
 void main() {
   float r = length(gl_PointCoord - 0.5) * 2.0;
   if (r > 1.0) discard;
   float a = 1.0 - smoothstep(0.86, 1.0, r);
-  vec3 c = r > 0.62 ? vec3(0.42, 0.42, 0.44) : vec3(1.0);
+  vec3 c = r > 0.62 ? u_ring : vec3(1.0);
   o = vec4(c * a, a);
 }`;
 const QVS = `#version 300 es
@@ -292,6 +296,30 @@ export function stationDepths(net, profiles, exag = 1) {
   return new Float32Array(out);
 }
 
+/** jaktrack: the elevated stations (rail at least OVER_ST_M up): { data: [x, y, z] on the deck top, ranges: per line
+ * [first, count] or undefined, stations: their indexes (index.js takes their 2D dots off the ground while the city shows) }. */
+export function overStations(net, profiles) {
+  const out = [], ranges = [], stations = [];
+  const lines = Array.isArray(net?.lines) ? net.lines : [];
+  const P = [0, 0, 1, 0];
+  for (let i = 0; i < lines.length; i++) {
+    const pr = profiles[i], line = lines[i];
+    if (!pr || !(pr.max >= OVER_ST_M) || !Array.isArray(line.stations)) continue;
+    const t = trackOf(line), first = out.length / 3;
+    for (let k = 0; k < line.stations.length; k++) {
+      const m = line.chain?.[k];
+      if (!Number.isFinite(m)) continue;
+      const h = pr.at(m);
+      if (!(h >= OVER_ST_M)) continue;
+      pointAt(t, m * (t.k || 1), P);
+      out.push(P[0], P[1], h + OVER_LIFT + 0.4);
+      stations.push(line.stations[k]);
+    }
+    if (out.length / 3 > first) ranges[i] = [first, out.length / 3 - first];
+  }
+  return { data: new Float32Array(out), ranges, stations };
+}
+
 /** A thin vertical shaft from every underground platform (stationDepths' points) up to the street, as ribbon vertices
  * (the ribbon program; colour SHAFT): with the view tilted it shows how deep each level runs under its station name. */
 export function shaftData(points) {
@@ -316,7 +344,7 @@ export function createTrains3d(opts) {
   let mode = { on: false, underground: false, trains: true };
   let selected = null, pickedLine = null;
   let reduced = !!opts.reduced;
-  let gl = null, prog = null, rprog = null, qprog = null;
+  let gl = null, prog = null, rprog = null, qprog = null, pprog = null, pvao = null, pbuf = null, pover = null;
   let vao = null, ibuf = null, qvao = null, qbuf = null, ovao = null, obuf = null, ocount = 0;
   let vbuf = null, ug = null, bores = null, hubs = [], fvao = null, fbuf = null, fcount = 0, ts = null;
   // per solid car instance: its train's list index and its place in the train (for trainset's carSpec)
@@ -645,6 +673,7 @@ export function createTrains3d(opts) {
     prog = compile(gl, VS, FS);
     rprog = compile(gl, RVS, RFS);
     qprog = compile(gl, QVS, QFS);
+    pprog = compile(gl, PVS, PFS);
     // cars
     vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
@@ -676,6 +705,15 @@ export function createTrains3d(opts) {
     ocount = od.length / 12;
     st.rails = ocount / 6;
     [ovao, obuf] = ribbonVao(od);
+    // jaktrack: the elevated stations' dots on the deck tops
+    pover = overStations(net, profiles);
+    st.overStations = pover.data.length / 3;
+    pvao = gl.createVertexArray();
+    gl.bindVertexArray(pvao);
+    pbuf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, pbuf);
+    gl.bufferData(gl.ARRAY_BUFFER, pover.data.byteLength ? pover.data : new Float32Array(3), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 12, 0);
     // footprints: every underground stretch traced on the street slab (0 m) in its colour, pale: the tube below shows
     // how deep it runs by how far it sits from its own trace (parallax)
     const fd = ribbonData(net, profiles, 'under', 0);
@@ -733,9 +771,9 @@ export function createTrains3d(opts) {
     onAdd(m, g) { map = m; try { init(g); } catch (e) { reason = 'shader'; console.warn('[city3d] trains', e); } },
     onRemove() {
       if (!gl || reason) return;
-      for (const b of [vbuf, ibuf, qbuf, obuf, fbuf]) if (b) gl.deleteBuffer(b);
-      for (const v of [vao, qvao, ovao, fvao]) if (v) gl.deleteVertexArray(v);
-      for (const p of [prog, rprog, qprog]) if (p) gl.deleteProgram(p.p);
+      for (const b of [vbuf, ibuf, qbuf, obuf, fbuf, pbuf]) if (b) gl.deleteBuffer(b);
+      for (const v of [vao, qvao, ovao, fvao, pvao]) if (v) gl.deleteVertexArray(v);
+      for (const p of [prog, rprog, qprog, pprog]) if (p) gl.deleteProgram(p.p);
       ug?.destroy(); ug = null; bores?.destroy(); bores = null; ts?.destroy?.(); ts = null;
       gl = null;
     },
@@ -793,6 +831,31 @@ export function createTrains3d(opts) {
         gl.uniform1f(rprog.u.u_grey, 1); gl.uniform1f(rprog.u.u_pick, pickedLine ?? -9);
         gl.uniform1f(rprog.u.u_w, 1.3 * dpr); gl.uniform1f(rprog.u.u_white, 0);
         gl.drawArrays(gl.TRIANGLES, 0, ocount);
+        // jaktrack: the open line / the open train's line as the 2D map draws it (white casing, its colour), but on the
+        // deck top: its ground copy is off while the city shows (index.js raiseNet), so line and train stay together
+        if (pickedLine != null) {
+          gl.uniform1f(rprog.u.u_only, 1);
+          gl.uniform1f(rprog.u.u_w, 6.5 * dpr); gl.uniform1f(rprog.u.u_white, 1);
+          gl.drawArrays(gl.TRIANGLES, 0, ocount);
+          gl.uniform1f(rprog.u.u_w, 4 * dpr); gl.uniform1f(rprog.u.u_white, 0);
+          gl.drawArrays(gl.TRIANGLES, 0, ocount);
+          gl.uniform1f(rprog.u.u_only, 0);
+        }
+        // the elevated stations on their decks: every one calm grey, the picked line's ringed in its colour
+        if (st.overStations) {
+          gl.useProgram(pprog.p);
+          gl.uniformMatrix4fv(pprog.u.u_m, false, M32);
+          gl.bindVertexArray(pvao);
+          gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+          gl.uniform1f(pprog.u.u_size, 11 * dpr); gl.uniform3f(pprog.u.u_ring, 0.42, 0.42, 0.44);
+          gl.drawArrays(gl.POINTS, 0, st.overStations);
+          const pr = pickedLine != null ? pover.ranges[pickedLine] : null;
+          if (pr) {
+            const c = rgbCached(lines[pickedLine]?.color);
+            gl.uniform1f(pprog.u.u_size, 16 * dpr); gl.uniform3f(pprog.u.u_ring, c[0], c[1], c[2]);
+            gl.drawArrays(gl.POINTS, pr[0], pr[1]);
+          }
+        }
         gl.depthMask(true);
       }
       if (st.cars) {

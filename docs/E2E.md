@@ -73,3 +73,24 @@ Tidak ada dependensi yang ditambahkan. Bila pemilik menginginkan suite otomatis,
 - Jalankan terhadap `bun run dev` dengan data contoh yang kecil dan tetap, supaya tidak bergantung pada berkas `var/` milik tiap orang. Itu berarti perlu fixture data yang boleh di-commit, dan itu keputusan lisensi (data trafik.live dan turunan OSM saat ini sengaja tidak di-commit).
 
 Keputusan ada di pemilik repo.
+
+## Uji ulang setelah perbaikan lanjutan (trase OSM, garis rute di atas dek, label ride)
+
+15 November 2026, data dibangun ulang dengan trase yang diselaraskan. Desktop 1440×900, bahasa Indonesia, pemutaran 08.10. **12 butir, 12 lulus.** Bukti berawalan `v2-` di `var/shots/`.
+
+| # | Butir | Hasil | Bukti |
+|---|---|---|---|
+| 1 | Pemutaran waktu: kereta dan bus ikut | Lulus | 4 kereta (01.30) → 102 kereta dan 5.651 bus (08.10); diputar 60× selama 3 detik: 08.10 → 08.13 |
+| 2 | Papan stasiun | Lulus | `v2-e2e-papan-stasiun.png`; Blok M, 6 keberangkatan |
+| 3 | Detail kereta dan ikuti, 2D | Lulus | `v2-e2e-detail-kereta-2d.png`; garis rute utuh di 2D (ruas layang ikut tergambar), "Berhenti mengikuti" aktif |
+| 4 | Label ride di ruas layang | Lulus | Tombol "Ikut kereta dari dekat" (EN: "Ride along") saat kereta di antara Blok A dan Blok M |
+| 5 | Label ride di terowongan | Lulus | Tombol "Ikut di terowongan" pada 08.18 (Senayan–Istora) |
+| 6 | 3D: garis rute dan stasiun di atas dek | Lulus | `v2-sesudah-mrt-lebak-bulus-dekat.png`, `v2-sesudah-mrt-blokm-terpilih.png`; 0 fitur `tk-pick` ruas layang dan 0 fitur `tk-via-deck` tergambar di tanah; 60 titik stasiun di dek |
+| 7 | 3D: viaduk MRT, LRT Jakarta, KRL Juanda, Manggarai | Lulus | `v2-sesudah-mrt-peralihan-dekat.png`, `v2-sesudah-lrt-jakarta.png`, `v2-sesudah-krl-juanda.png`, `v2-sesudah-krl-manggarai.png`; `elev = "elev"`, 502 dek, 2.194 tiang |
+| 8 | Ride "Dari belakang" | Lulus | `v2-e2e-ride-dari-belakang.png`; `rideView = "behind"` |
+| 9 | Ride "Kabin" | Lulus | `v2-e2e-ride-kabin.png`; `rideView = "cab"` |
+| 10 | Mode Bawah tanah (Dukuh Atas) | Lulus | `v2-sesudah-bawah-tanah-dukuh-atas.png`, `v2-e2e-bawah-tanah-dukuh-atas.png`; 6 kotak stasiun, 1 ruas terowongan; filter lapisan 2D kembali seperti semula di mode ini |
+| 11 | 2D tidak rusak setelah 3D dimatikan | Lulus | `v2-e2e-2d-sesudah-3d.png`; filter ketujuh lapisan 2D sama persis dengan sebelum 3D dinyalakan |
+| 12 | Tanpa galat konsol | Lulus | 0 error; satu peringatan MapLibre `Too many glyphs` saat ride (sudah dicatat di atas) |
+
+Tidak diuji ulang: bus, CCTV, pencarian, tampilan ponsel, dan bahasa EN selain label tombol ride.

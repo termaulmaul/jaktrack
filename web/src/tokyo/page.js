@@ -1463,7 +1463,14 @@ function ugTrainAct(id) {
   if (!HAS.city3d || S.mapFailed || !S.model) return '';
   const run = S.ix.runByKey?.get?.(id) || S.sim?.runById?.get?.(id);
   if (!run || !S.model.lines[run.line]?.underground) return '';
-  return `<button type="button" class="btn tk-seeug tk-ride" data-act="ride-ug" data-id="${esc(id)}">${UG_SVG.replace('<svg ', '<svg class="i" ')}${esc(t('city3d.ug.ridetrain'))}</button>`;
+  // jaktrack: "in the tunnel" only while the train is in one (the heights pack's ranges at its place); on the viaduct or
+  // at grade the label is the neutral "Ride along". Without the heights pack the old label stays.
+  let tunnel = true;
+  try {
+    const R = S.elev?.lines?.[S.model.lines[run.line].id], pos = Array.isArray(R) ? loaded.model?.position?.(run, serviceSec(), { model: S.sim, force: true }) : null;
+    if (pos && Number.isFinite(pos.along)) tunnel = R.some(([a, b, h]) => h < 0 && pos.along >= a && pos.along <= b);
+  } catch { /* the old label */ }
+  return `<button type="button" class="btn tk-seeug tk-ride" data-act="ride-ug" data-id="${esc(id)}">${UG_SVG.replace('<svg ', '<svg class="i" ')}${esc(t(tunnel ? 'city3d.ug.ridetrain' : 'city3d.ug.ridealong'))}</button>`;
 }
 function withRide(html, id) {
   const b = ugTrainAct(id);

@@ -74,6 +74,8 @@ Tanpa langkah 1 dan 2, `bun run data` berhenti dengan pesan yang menyebut berkas
 
 `bun run data` menjalankan empat pembangun berurutan: kereta (`data-build/jakarta.mjs`), ketinggian rel (`data-build/elev.mjs`), bus (`data-build/bus.mjs`), lalu CCTV.
 
+Bila `var/src/osm/rail.json` ada, pembangun kereta juga menggeser tiap lintasan ke garis tengah rel OpenStreetMap (`data-build/snap.mjs`) dan mencetak selisihnya per jalur; tanpa berkas itu lintasan sumber dipakai apa adanya.
+
 Pembangun ketinggian membaca `var/src/osm/rail.json` (way rel OpenStreetMap se-Jabodetabek dengan tag `bridge`/`tunnel`/`layer`) dan menulis `elev-v1.json`: per jalur, ruas mana yang layang dan mana yang terowongan. Berkas OSM itu diunduh sekali dengan `bun data-build/elev.mjs --fetch` (satu kueri Overpass). Bila berkasnya tidak ada, pembangun mencetak "Ketinggian dilewati" dan berakhir dengan kode 0; tampilan 3D lalu hanya mengenal terowongan MRT dan semua ruas lain digambar di permukaan. Metode, sumber per jalur, dan batasannya: [docs/ELEVASI.md](docs/ELEVASI.md).
 
 Pembangun bus mengunduh GTFS (2,5 MB) sekali dan menyimpannya di `var/tmp/gtfs/`; `bun data-build/bus.mjs --fetch` mengunduh ulang. Bila unduhan gagal, data kereta tetap terbangun, perintah berakhir dengan kode galat dan pesan yang menyebut sebabnya, dan halaman berjalan tanpa tombol bus. Pembangun bus memakai perintah `unzip` sistem (macOS/Linux).
@@ -201,6 +203,7 @@ asset-krl-*.json ─► data-build/jakarta.mjs ─► var/static/tokyo/ ─► w
 | `data-build/jakarta.mjs` | Pembangun data Jakarta |
 | `data-build/jakarta.test.mjs` | Uji berkas hasil bangun |
 | `data-build/elev.mjs`, `elev.test.mjs` | Pembangun ketinggian rel dari tag OpenStreetMap, dan ujinya |
+| `data-build/snap.mjs`, `snap.test.mjs` | Penyelarasan lintasan ke garis tengah rel OpenStreetMap, dan ujinya |
 | `data-build/bus.mjs` | Pembangun data bus dari GTFS TransJakarta |
 | `data-build/bus.test.mjs` | Uji simulator bus dan berkas hasil bangun bus |
 | `web/src/tokyo/buses/` | Lapisan bus (WebGL), simulator jadwal `sim.js`, daftar rute dan lembar halte `browse.js` |
@@ -225,7 +228,7 @@ Nama `tokyo` pada folder, berkas, dan jenis berkas data (`tokyo-network`) adalah
 - **Stasiun bawah tanah ditandai dengan tangan**: enam stasiun MRT dari Senayan sampai Bundaran HI (`UNDERGROUND` di `data-build/jakarta.mjs`). Tinggi rel per ruas kini dari tag OpenStreetMap, dan pembangunnya memeriksa silang kedua hal itu.
 - **Angka tinggi dan kedalaman adalah perkiraan**: terowongan 18 m di semua stasiun (digambar 5× lebih dalam), viaduk 12 m ditambah 5 m per tingkat tag `layer` OpenStreetMap di atas 2. Yang bersumber hanya letak ruas layang dan terowongan serta urutan tingkatnya; tinggi dan kedalaman asli tiap stasiun tidak ditemukan (lihat [docs/ELEVASI.md](docs/ELEVASI.md)).
 - **Bentuk terowongan MRT adalah asumsi**: dua tabung perisai kembar di antara stasiun dan kotak di stasiun, dengan ukuran bawaan kode asal. Kedua tabung mengikuti garis tengah rel yang sama dengan jarak tetap, bukan trase asli tiap rel dari OpenStreetMap, dan baru terbaca sebagai dua tabung dari dekat (zoom 18 ke atas atau "Ikut di terowongan").
-- **Viaduk digambar dari garis tengah jalur kita**, bukan dari trase tiap rel OpenStreetMap: satu dek per jalur, stasiun layang tanpa bangunan peron, dan jembatan KRL di bawah 300 m (sungai, jalan) tetap di permukaan.
+- **Viaduk digambar di garis tengah rel OpenStreetMap**, satu dek untuk kedua arah: stasiun layang tanpa bangunan peron, dan jembatan KRL di bawah 300 m (sungai, jalan) tetap di permukaan. Di 3D, garis jalur dan titik stasiun ruas layang digambar di atas dek; nama stasiunnya tetap di posisi tanah.
 - **Stasiun bernama sama dengan id berbeda** (misalnya Dukuh Atas MRT dan LRT) belum digabung menjadi satu titik pindah.
 - **Daftar "Pilih stasiunmu"** memakai id yang bergantung pada urutan jalur hasil bangun, jadi bisa bergeser bila data berubah.
 - **Uji bawaan tokyo-rail-twin dihapus**, karena mengunci perilaku Tokyo (zona waktu JST, data Tokyo). Yang ada hanya uji berkas hasil bangun.

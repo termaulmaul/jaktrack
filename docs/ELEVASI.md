@@ -89,9 +89,51 @@ Pemeriksaan silang: pembangun mencetak `PERIKSA` bila stasiun yang ditandai bawa
 
 Batasan metode:
 
-- Viaduk digambar dari garis tengah jalur kita (titik tiap ±80 m), bukan dari trase tiap rel OSM. Di tikungan, dek bisa meleset beberapa meter dari jalan di peta dasar.
+- Viaduk digambar dari garis tengah jalur kita, yang sejak perbaikan lanjutan (bagian berikut) diselaraskan ke garis tengah rel OSM; satu dek untuk kedua arah.
 - Bila lintasan kita jatuh di antara rel layang dan rel permukaan yang sejajar, rel terdekat yang menang. Itu yang terjadi di Manggarai (catatan 3); tempat lain yang serupa belum diperiksa satu per satu.
 - OSM bisa salah atau tertinggal. Data ini potret satu tanggal; jalankan ulang `bun data-build/elev.mjs --fetch` untuk memperbaruinya.
+
+## Trase dan tampilan 3D (perbaikan lanjutan)
+
+Pemilik repo melihat, saat mengikuti kereta MRT di Lebak Bulus dalam 3D, bahwa viaduk tidak berimpit dengan "bangunan jalur" di peta dan garis rute merah tertinggal di tanah. Dugaan awalnya trase kita meleset dari OpenStreetMap. Hasil pemeriksaan:
+
+- **Trase sumber sudah menempel pada rel OSM.** Lintasan dari berkas jadwal mengikuti salah satu rel OSM dengan selisih rata-rata 0,2–0,8 m (tabel di bawah). Satu-satunya selisih besar ada di Manggarai (97 m di Lin Bogor), tempat lintasan sumber melompat di antara rel bawah dan rel atas.
+- **"Bangunan jalur" di tanah itu gambar kita sendiri.** Peta dasar tidak menggambar rel MRT/LRT sama sekali (lapisan `rail`-nya hanya untuk kelas `rail`). Pita lebar di tanah adalah lapisan viaduk 2D kita (`tk-via-deck`, `tk-via-edge`) dan garis jalur (`tk-rest`, `tk-pick`), yang tetap digambar datar sementara dek 3D berdiri 12–27 m di atasnya. Dilihat miring, keduanya terpisah oleh paralaks; dilihat tegak lurus dari atas, keduanya berimpit.
+
+Yang diubah:
+
+1. **Garis jalur, garis rute, dan penanda stasiun ikut tinggi rel.** MapLibre tidak bisa menaikkan lapisan garis atau simbol (tidak ada properti elevasi untuk keduanya), jadi selama kota 3D tampil dengan kereta 3D (zoom ≥ 14,2), salinan di tanah untuk ruas layang disembunyikan dengan filter, dan lapisan WebGL kereta menggambar gantinya di atas dek: garis jalur abu-abu, garis jalur atau rute yang dipilih (selubung putih dan warna jalurnya), dan titik stasiun (cincin abu-abu; cincin warna jalur bila jalurnya dipilih). Ruas di permukaan, tampilan 2D, dan mode Bawah tanah tidak berubah. Nama stasiun tetap label peta biasa di posisi tanahnya.
+2. **Trase digeser ke garis tengah rel OSM** (`data-build/snap.mjs`, dipanggil `data-build/jakarta.mjs` per potongan rel antarstasiun). Tiap titik hanya digeser menyamping: ke rel OSM sejenis terdekat, atau ke tengah-tengahnya dengan rel kembaran 2–7 m di sebelahnya. Karena lintasan sumber berada di salah satu dari dua rel, pergeserannya umumnya ±2 m; gunanya dek viaduk 9 m kini menutup kedua rel, dan lekukan pendek akibat lintasan sumber pindah rel berkurang dari 47 menjadi 9 potongan. Di Manggarai, Lin Bogor kini mengikuti rel atas sepanjang stasiun (aturan `PREFER_UP` yang sama dengan pembangun ketinggian). Urutan stasiun, jadwal, dan uji `data-build/jakarta.test.mjs` tidak berubah; panjang jalur berubah paling banyak ±0,1 km.
+3. **Label tombol ride.** "Ikut di terowongan" hanya saat kereta berada di ruas terowongan menurut `elev-v1.json`; di ruas layang dan permukaan labelnya "Ikut kereta dari dekat".
+
+Selisih lintasan terhadap rel OSM sejenis terdekat yang searah, dalam meter (keluaran `bun data-build/jakarta.mjs`). "Sesudah" lebih besar daripada "sebelum" karena garis tengah jalur ganda memang berjarak setengah jarak antar-rel dari rel terdekat; yang relevan adalah maksimumnya.
+
+| Jalur | Sebelum: rata-rata | Sebelum: maks | Sesudah: rata-rata | Sesudah: maks | Tanpa rel OSM |
+|---|---|---|---|---|---|
+| `krl.Bogor.0` | 0,3 | 97,2 | 1,8 | 4,7 | 0 m |
+| `krl.Bogor.1` | 0,3 | 97,2 | 1,4 | 3,6 | 0 m |
+| `krl.Rangkasbitung.2` | 0,2 | 1,7 | 1,7 | 57,1 | 0 m |
+| `krl.Rangkasbitung.3` | 0,2 | 2,5 | 1,6 | 2,9 | 0 m |
+| `krl.Tangerang.4` | 0,2 | 1,0 | 1,8 | 3,2 | 0 m |
+| `krl.Tangerang.5` | 0,2 | 2,4 | 1,6 | 13,0 | 0 m |
+| `krl.Tanjung-Priok.6` | 0,8 | 4,7 | 1,6 | 3,2 | 0 m |
+| `krl.Cikarang.7` | 0,3 | 2,4 | 1,7 | 5,1 | 0 m |
+| `krl.Cikarang.8` | 0,5 | 3,4 | 1,7 | 3,7 | 0 m |
+| `mrt.MRT.9` | 0,2 | 0,6 | 1,4 | 3,0 | 0 m |
+| `lrtj.LRTJ.10` | 0,3 | 8,3 | 2,0 | 7,9 | 0 m |
+| `jbdb.Cibubur.11` | 0,2 | 0,7 | 1,9 | 3,0 | 0 m |
+| `jbdb.Bekasi.12` | 0,2 | 0,7 | 1,9 | 3,2 | 0 m |
+| `kai.KA-GMR.13` | 0,2 | 5,8 | 1,9 | 3,8 | 0 m |
+| `kai.KA-PSE.14` | 0,3 | 3,3 | 1,9 | 6,6 | 0 m |
+| `kai.KA-PG.15` | 0,2 | 0,7 | 1,0 | 3,5 | 0 m |
+
+Yang dibiarkan:
+
+- **Sembilan lekukan pendek (10–20 m) warisan lintasan sumber**, tempat lintasan pindah rel dalam satu langkah: dekat Jakarta Kota (Lin Bogor), satu di Lin Rangkasbitung sekitar 106,5188; −6,3549 (asal angka 57,1 m di tabel: di lekukan itu arah lintasan melintang sehingga rel "searah" terdekat adalah rel lain), dua di Lin Tangerang sekitar 106,6648; −6,1720, dan dua di Lin Cikarang (106,9232; −6,2155 dan 106,9707; −6,2213). Angka 13,0 m di `krl.Tangerang.5` sejenis. Tidak diperbaiki satu per satu.
+- **Satu garis untuk dua arah.** Kereta kedua arah tetap berjalan di garis tengah, bukan di relnya masing-masing.
+- **Terowongan** mengikuti garis tengah yang sama; berkas opsional `tunnels-v1.json` milik kode asal (trase per rel di terowongan) tidak dibangun, karena hanya memengaruhi mode Bawah tanah dan lintasan kita di sana sudah berada dalam 3 m dari rel OSM.
+- **Tinggi dek tetap perkiraan** (bagian "Angka meter"); bila angka aslinya berbeda, dek tetap berimpit dari atas tetapi tingginya salah.
+- Overpass tidak dipanggil lagi; semuanya memakai `var/src/osm/rail.json` yang sama. `network-v1.json` kini juga turunan OSM (ODbL) dan mencatatnya di `meta.source.alignment`; berkas itu tetap hanya di `var/`.
 
 ## Lisensi
 

@@ -747,7 +747,7 @@ Object.assign(DICT.en, {
   'city3d.ug.toast': 'Underground: subway tunnels at their depth (drawn 5× deeper). Green ring = live position.',
   'city3d.ug.zoomin': 'Zoom in to see the underground',
   'city3d.ug.true': 'True scale', 'city3d.ug.ride': 'Ride a train', 'city3d.ug.stop': 'Stop riding',
-  'city3d.ug.ridenone': 'No subway train in view', 'city3d.ug.ridetrain': 'Ride in the tunnel',
+  'city3d.ug.ridenone': 'No subway train in view', 'city3d.ug.ridetrain': 'Ride in the tunnel', 'city3d.ug.ridealong': 'Ride along',
   'city3d.ug.behind': 'Behind', 'city3d.ug.cab': 'Cab',
 });
 Object.assign(DICT.ja, {
@@ -755,7 +755,7 @@ Object.assign(DICT.ja, {
   'city3d.ug.toast': '地下: 地下鉄のトンネルを深さどおりに表示（深さは5倍で描画）。緑の輪 = リアルタイム位置',
   'city3d.ug.zoomin': '地下を見るには拡大してください',
   'city3d.ug.true': '実寸', 'city3d.ug.ride': '電車に乗る', 'city3d.ug.stop': '乗るのをやめる',
-  'city3d.ug.ridenone': '近くに地下鉄の電車がありません', 'city3d.ug.ridetrain': 'トンネルを乗って見る',
+  'city3d.ug.ridenone': '近くに地下鉄の電車がありません', 'city3d.ug.ridetrain': 'トンネルを乗って見る', 'city3d.ug.ridealong': '電車に乗って見る',
   'city3d.ug.behind': '後ろから', 'city3d.ug.cab': '運転席',
 });
 Object.assign(DICT.id, {
@@ -763,7 +763,7 @@ Object.assign(DICT.id, {
   'city3d.ug.toast': 'Bawah tanah: terowongan kereta bawah tanah di kedalamannya (digambar 5× lebih dalam). Cincin hijau = posisi langsung.',
   'city3d.ug.zoomin': 'Perbesar peta untuk melihat bawah tanah',
   'city3d.ug.true': 'Skala asli', 'city3d.ug.ride': 'Ikut kereta', 'city3d.ug.stop': 'Berhenti ikut',
-  'city3d.ug.ridenone': 'Tidak ada kereta bawah tanah di sini', 'city3d.ug.ridetrain': 'Ikut di terowongan',
+  'city3d.ug.ridenone': 'Tidak ada kereta bawah tanah di sini', 'city3d.ug.ridetrain': 'Ikut di terowongan', 'city3d.ug.ridealong': 'Ikut kereta dari dekat',
   'city3d.ug.behind': 'Dari belakang', 'city3d.ug.cab': 'Kabin',
 });
 // (end of the underground view keys)

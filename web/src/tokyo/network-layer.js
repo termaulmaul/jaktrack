@@ -578,7 +578,7 @@ export function addNetwork(map, net, opts = {}) {
     const bb = [Infinity, Infinity, -Infinity, -Infinity];
     const feats = piecesOf[i].map((p) => {
       for (const [x, y] of p.coords) { if (x < bb[0]) bb[0] = x; if (y < bb[1]) bb[1] = y; if (x > bb[2]) bb[2] = x; if (y > bb[3]) bb[3] = y; }
-      return { type: 'Feature', properties: { ln: p.ln, c, ug: p.cls === 1 ? 1 : 0 }, geometry: { type: 'LineString', coordinates: p.coords } };
+      return { type: 'Feature', properties: { ln: p.ln, c, ug: p.cls === 1 ? 1 : 0, via: p.cls === 2 ? 1 : 0 }, geometry: { type: 'LineString', coordinates: p.coords } };   // via: city3d takes the viaduct stretches off the ground while it shows
     });
     map.getSource('tk-pick')?.setData({ type: 'FeatureCollection', features: feats });
     const want = Array.isArray(stops) && stops.length ? stops : (l.stations || []);

@@ -43,7 +43,7 @@
 import { profiles as makeProfiles, ELEV_URL } from './elevation.js';
 import { viaductData, addViaduct, showViaduct, removeViaduct, VIADUCT_IDS } from './viaduct.js';
 import { buildingSpec, addBuildings, showBuildings, removeBuildings, BLD_ID } from './buildings.js';
-import { createTrains3d, TRAINS3D_ID } from './vehicles.js';
+import { createTrains3d, overStations, TRAINS3D_ID } from './vehicles.js';
 import { carSpec } from './trainset.js';   // the Behind eye per line (its cars' height / pantograph)
 import { UG_MIN_Z } from './underground.js';
 import { patchProfiles, localTracks, localPlatforms } from './real.js';
@@ -259,6 +259,7 @@ export async function mountCity3d(map, opts = {}) {
     const elev = await loadElev();
     S.elevSource = elev ? 'elev' : 'heuristic';
     S.profiles = makeProfiles(net, elev);
+    S.overSt = null;
     // real depths, sections and confidence (elev-v2) over elev-v1 where they exist
     S.real = null;
     const v2 = opts.elev2 !== undefined ? opts.elev2 : ELEV2_URL ? await fetch(ELEV2_URL).then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;
@@ -292,6 +293,31 @@ export async function mountCity3d(map, opts = {}) {
     else if (S.line != null) S.trains.setLine(S.line);
   }
 
+  // jaktrack: while the city shows, the elevated stretches of the 2D network (network-layer.js: the deck band, the line,
+  // the picked line, the station dots) leave the ground: MapLibre cannot raise a line or symbol layer, so flat they
+  // lie 12+ m under the deck and its train and read as a second, misplaced track. vehicles.js draws the line and the
+  // stations on the deck tops instead. The 2D view and the underground view keep the ground copies.
+  const VIA_LINES = ['tk-via-deck', 'tk-via-edge', 'tk-rest', 'tk-pick-case', 'tk-pick'], VIA_DOTS = ['tk-sdot', 'tk-mdot', 'tk-pick-dot'];
+  function raiseNet() {
+    // only with the 3D trains (street zoom): further out the 2D trainsets run on the ground, and so does their network
+    const on = !!S.cityOn && !!S.trains3d && !!S.profiles;
+    if (!!S.raised === on) return;
+    S.raised = on;
+    try {
+      S.raisedWas = S.raisedWas || {};
+      // a station dot goes only when every station it stands for is up (a hub's dot can stand for surface platforms too)
+      const up = new Set(S.overSt || (S.overSt = overStations(net, S.profiles).stations));
+      const hide = [...up].filter((si) => { const g = net.stations?.[si]?.group; return !(g >= 0) || (net.groups?.[g] || [si]).every((x) => up.has(x)); });
+      const extra = (id) => (VIA_LINES.includes(id) ? ['!=', ['get', 'via'], 1] : ['!', ['in', ['get', 's'], ['literal', hide]]]);
+      for (const id of [...VIA_LINES, ...VIA_DOTS]) {
+        if (!map.getLayer(id)) continue;
+        if (!(id in S.raisedWas)) S.raisedWas[id] = map.getFilter(id) ?? null;
+        const was = S.raisedWas[id];
+        map.setFilter(id, on ? (was ? ['all', was, extra(id)] : extra(id)) : was);
+      }
+    } catch (e) { console.warn('[city3d] raise network', e); }
+  }
+
   function showCity(on) {
     if (on && S.built && !S.viaOnMap) {
       try {
@@ -303,6 +329,8 @@ export async function mountCity3d(map, opts = {}) {
     if (S.bldOwn) showBuildings(map, on);
     else if (map.getLayer(BLD_STYLE)) map.setLayoutProperty(BLD_STYLE, 'visibility', on ? 'visible' : (S.bldWas || 'none'));
     showViaduct(map, on);
+    S.cityOn = !!on;
+    raiseNet();
   }
 
   // where 3D labels may go (css px on the map canvas): setInsets() when the page gives them, else the map's padding
@@ -338,6 +366,7 @@ export async function mountCity3d(map, opts = {}) {
       S.trains.setMode({ trains: want });
       hide2d(want);
     }
+    raiseNet();
     ugNote(ugFar);
   }
   map.on('zoom', syncZoom);
@@ -767,13 +796,14 @@ export async function mountCity3d(map, opts = {}) {
       S.selected = id ?? null;
       S.trains?.setSelected(S.selected);
       const run = S.selected == null ? null : sim?.runById?.get(S.selected) || (opts.runs || sim?.runs || []).find((r) => r.key === S.selected || r.id === S.selected);
-      S.trains?.setLine(run ? run.line : S.line ?? null);
+      S.selLine = run ? run.line : null;   // jaktrack: kept, so a later setLine(null) (page.js on every train screen) leaves the open train's line picked
+      S.trains?.setLine(S.selLine ?? S.line ?? null);
     },
     /** The open line (index or id): its deck rails in colour (null: all calm grey). */
     setLine(l) {
       const i = typeof l === 'string' ? net.lines.findIndex((x) => x.id === l) : l;
       S.line = Number.isInteger(i) && i >= 0 ? i : null;
-      S.trains?.setLine(S.line);
+      S.trains?.setLine(S.line ?? S.selLine ?? null);
     },
     setLang(l) { lang = l || 'en'; fly.refresh(); map.triggerRepaint(); },
     labels: () => S.labels?.boxes() || [],
@@ -793,6 +823,7 @@ export async function mountCity3d(map, opts = {}) {
       fly: fly.active(),   // Fly
     }),
     destroy() {
+      S.cityOn = false; raiseNet();
       fly.destroy();
       S.noteEl?.remove(); S.noteEl = null;
       map.off('style.load', onStyle);
