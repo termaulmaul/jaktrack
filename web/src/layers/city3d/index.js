@@ -295,30 +295,42 @@ export async function mountCity3d(map, opts = {}) {
     else if (S.line != null) S.trains.setLine(S.line);
   }
 
-  // jaktrack: while the city shows, the elevated stretches of the 2D network (network-layer.js: the deck band, the line,
-  // the picked line, the station dots) leave the ground: MapLibre cannot raise a line or symbol layer, so flat they
-  // lie 12+ m under the deck and its train and read as a second, misplaced track. vehicles.js draws the line and the
-  // stations on the deck tops instead. The 2D view and the underground view keep the ground copies.
-  const VIA_LINES = ['tk-via-deck', 'tk-via-edge', 'tk-rest', 'tk-pick-case', 'tk-pick'], VIA_DOTS = ['tk-sdot', 'tk-mdot', 'tk-pick-dot'];
+  // jaktrack: while the 3D trains show, the 2D network's lines (network-layer.js) leave the map: MapLibre cannot raise
+  // or split a line layer, so flat they lie under the deck and between the two tracks and read as a second, misplaced
+  // line. vehicles.js draws every line as its tracks instead, from end to end (deck, ground, ramp, tunnel), so there is
+  // one drawing of a line at a time and it never stops at a tunnel mouth. The elevated stations' dots move to the deck
+  // tops the same way. In the underground view only the open stretches go (vehicles.js draws them over the veil); the
+  // tunnels keep their 2D dashes under the tubes, and every dot stays. Below Z_2D and in 2D nothing is touched.
+  const NET_LINES = ['tk-via-deck', 'tk-via-edge', 'tk-rest', 'tk-rest-ug', 'tk-pick-case', 'tk-pick', 'tk-pick-ug'], NET_DOTS = ['tk-sdot', 'tk-mdot', 'tk-pick-dot'];
+  // while 3D is on the 2D line wears its line's colour (network-layer.js keeps it calm grey at rest), so zooming across
+  // Z_2D swaps one red line for two red tracks, not a grey line for red tracks
+  const NET_TINT = ['tk-rest', 'tk-rest-ug'];
   function raiseNet() {
-    // only with the 3D trains (street zoom): further out the 2D trainsets run on the ground, and so does their network
-    const on = !!S.cityOn && !!S.trains3d && !!S.profiles;
-    if (!!S.raised === on) return;
-    S.raised = on;
     try {
+      const tint = !!S.on;
+      if (tint !== !!S.tinted && map.getLayer(NET_TINT[0])) {
+        S.tintWas = S.tintWas || {};
+        for (const id of NET_TINT) {
+          if (!map.getLayer(id)) continue;
+          if (tint) S.tintWas[id] = map.getPaintProperty(id, 'line-color');
+          map.setPaintProperty(id, 'line-color', tint ? ['get', 'rt'] : S.tintWas[id]);
+        }
+        S.tinted = tint;
+      }
+      // only with the 3D trains (street zoom): further out the 2D trainsets run on the ground, and so does their network
+      const how = !S.trains3d || !S.profiles ? '' : S.cityOn ? 'city' : S.underground ? 'ug' : '';
+      if ((S.raised || '') === how) return;
+      S.raised = how;
       S.raisedWas = S.raisedWas || {};
       // a station dot goes only when every station it stands for is up (a hub's dot can stand for surface platforms too)
       const up = new Set(S.overSt || (S.overSt = overStations(net, S.profiles).stations));
       const hide = [...up].filter((si) => { const g = net.stations?.[si]?.group; return !(g >= 0) || (net.groups?.[g] || [si]).every((x) => up.has(x)); });
-      // the picked line: only its tunnel stretches stay on the 2D map (dashed); the rest is vehicles.js's ribbon, on the
-      // open train's own track
-      // with the tracks drawn in 3D (S.rails), the 2D map's own line leaves the ground everywhere but in the tunnels
-      const extra = (id) => (id.startsWith('tk-pick') && VIA_LINES.includes(id) ? ['==', ['get', 'ug'], 1] : id === 'tk-rest' && S.rails ? ['==', ['get', 'ug'], 1] : VIA_LINES.includes(id) ? ['!=', ['get', 'via'], 1] : ['!', ['in', ['get', 's'], ['literal', hide]]]);
-      for (const id of [...VIA_LINES, ...VIA_DOTS]) {
+      const extra = (id) => (NET_DOTS.includes(id) ? (how === 'city' ? ['!', ['in', ['get', 's'], ['literal', hide]]] : null) : ['==', ['get', 'ug'], how === 'ug' ? 1 : 2]);   // ug is 0 | 1: 2 = none
+      for (const id of [...NET_LINES, ...NET_DOTS]) {
         if (!map.getLayer(id)) continue;
         if (!(id in S.raisedWas)) S.raisedWas[id] = map.getFilter(id) ?? null;
-        const was = S.raisedWas[id];
-        map.setFilter(id, on ? (was ? ['all', was, extra(id)] : extra(id)) : was);
+        const was = S.raisedWas[id], x = how ? extra(id) : null;
+        map.setFilter(id, x ? (was ? ['all', was, x] : x) : was);
       }
     } catch (e) { console.warn('[city3d] raise network', e); }
   }
@@ -417,6 +429,7 @@ export async function mountCity3d(map, opts = {}) {
       S.built = false;
       S.trains?.destroy(); S.labels?.destroy();
       S.ugHidden = null;   // a new style: its names are visible again
+      S.raised = S.tinted = null;   // ... and the network's layers are as network-layer.js made them
       S.viaOnMap = false;  // ... and none of our layers
       build().then(() => { showCity(!S.underground); S.trains.setMode({ on: true, underground: S.underground }); ugLabels(S.underground); }).catch((e) => console.warn('[city3d] rebuild', e));
     } catch (e) { console.warn('[city3d] style', e); }

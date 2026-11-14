@@ -42,19 +42,19 @@ import { boreIndex, eyeIn } from './boreeye.js';   // the free camera's eye amon
 
 export const TRAINS3D_ID = 'tk3d-trains';
 // LEFT_M 0: tanpa data jumlah rel, kereta digambar tepat di atas garis jalurnya. Dengan data itu (opts.rails: elev-v1.json
-// `tracks` + `hand`, web/src/tokyo/rails.js) kereta berjalan di rel arahnya sendiri di ruas jalur ganda, dan garis rute kereta
-// yang dibuka ikut digeser ke rel itu (routeData), supaya tidak tampak sebagai bayangan di samping kereta.
+// `tracks` + `hand`, web/src/tokyo/rails.js) kereta berjalan di rel arahnya sendiri di ruas jalur ganda, dan kedua rel jalur
+// yang dibuka disorot (railData), supaya tidak ada garis rute yang tampak sebagai bayangan di samping kereta.
 // Dengan 1,9 m (nilai asal) garis rute yang dipilih tampak sebagai bayangan di samping kereta. Kereta berpapasan jadi bertumpuk sesaat.
 export const CAR_L = 19.5, CAR_GAP = 0.8, CAR_W = 2.95, CAR_H = 3.7, LIFT = 0.4, LEFT_M = 0;
 export const MIN_W_PX = 7, K_MAX = 8, HEIGHT_GAIN = 0.6;
 export const UNDER_M = -2;                 // a car this far below ground is underground
 // jaktrack: the visible tracks (railData): a band RAIL_W m wide (x the trains' widening), RAIL_LIFT above the deck / ground
-export const RAIL_STEP = 50, RAIL_W = 1.4, RAIL_LIFT = 0.22, RAIL_GREY = [0.56, 0.57, 0.6];
+// (in a tunnel: at its depth, dashed). RAIL_GREY: the other lines' tracks while one line is open.
+export const RAIL_STEP = 50, RAIL_W = 1.4, RAIL_LIFT = 0.22, RAIL_GREY = [0.67, 0.67, 0.69];
 /** How many times wider than life the trains are drawn at a zoom (lat: the view's latitude): 1 from about z17.5, K_MAX at city zoom. */
 export const kwAtZoom = (z, lat = -6.2) => Math.min(K_MAX, Math.max(1, MIN_W_PX * (40075016.686 * Math.cos(lat * Math.PI / 180) / (512 * 2 ** z)) / CAR_W));
 /** The track spacing's widening for a train widening kw (rounded UP in quarter steps: never narrower than the bodies). */
 export const wideOf = (kw) => Math.ceil(Math.max(1, kw) * 4) / 4;
-export const ROUTE_STEP = 25;   // jaktrack: metres per piece of the picked line's ribbon (routeData)
 export const OVER_ST_M = 3.5;   // jaktrack: a station this far up is drawn on its deck (viaduct.js MIN_H: where a deck stands)
 export const OVER_M = 1, OVER_LIFT = 0.45;  // track this far up gets its line's colour along the deck top, a little above it
 const FAINT_SURFACE = 0.32, FAINT_UNDER = 0.3, VEIL = [0.962, 0.966, 0.973, 0.72];
@@ -149,7 +149,7 @@ precision highp float;
 in vec4 v_col; uniform float u_white; uniform float u_grey; uniform float u_pick; uniform float u_skip; out vec4 o;
 void main() {
   float picked = abs(v_col.a - u_pick) < 0.5 ? 1.0 : 0.0;
-  if (abs(v_col.a - u_skip) < 0.5) discard;   // jaktrack: the picked line is not drawn thin: routeData's wide ribbon is its line
+  if (abs(v_col.a - u_skip) < 0.5) discard;   // jaktrack: the picked line is not drawn thin: its tracks (railData) are its line
   vec3 c = mix(vec3(0.667, 0.667, 0.69), v_col.rgb, max(picked, 1.0 - u_grey));
   o = vec4(mix(c, vec3(1.0), u_white), 1.0);
 }`;
@@ -171,26 +171,47 @@ void main() {
   vec3 c = r > 0.62 ? u_ring : vec3(1.0);
   o = vec4(c * a, a);
 }`;
-// jaktrack: the tracks themselves (railData): a calm grey band per track, RAIL_W metres wide, where its trains run. Each
-// vertex carries how far left of the chain its track lies at 1x (a_off: at this end, at the other end); u_wide is the
-// trains' own widening (wide(kw)), so a train stands on its track at every zoom without the buffer being rebuilt.
+// jaktrack: the tracks themselves (railData): a band per track in its line's colour, RAIL_W metres wide, where its trains
+// run: both directions of a line wear its colour. Each vertex carries how far left of the chain its track lies at 1x
+// (a_off: at this end, at the other end); u_wide is the trains' own widening (wide(kw)), so a train stands on its track
+// at every zoom without the buffer being rebuilt. a_cm = the line's colour (0xRRGGBB as a float) and the metres along
+// the line (the tunnel stretches' dashes).
 const TVS = `#version 300 es
 precision highp float;
 layout(location=0) in vec3 a_p;
 layout(location=1) in vec3 a_q;
 layout(location=2) in vec2 a_se;
 layout(location=3) in vec2 a_off;
+layout(location=4) in vec2 a_cm;
 uniform mat4 u_m; uniform vec2 u_vp; uniform float u_w; uniform float u_wref; uniform float u_wide;
+uniform float u_flat;   // 1 = at the track's height / depth; 0 = flat on the street (the underground view's open stretches)
+out vec3 v_col; out float v_m; out float v_z;
 void main() {
   vec2 dir = (a_q.xy - a_p.xy) * a_se.y; float dl = length(dir); dir = dl > 1e-6 ? dir / dl : vec2(1.0, 0.0);
   vec2 left = vec2(-dir.y, dir.x);
-  vec3 p = a_p + vec3(left * a_off.x * u_wide, 0.0), q = a_q + vec3(left * a_off.y * u_wide, 0.0);
+  vec3 p = vec3(a_p.xy + left * a_off.x * u_wide, a_p.z * u_flat), q = vec3(a_q.xy + left * a_off.y * u_wide, a_q.z * u_flat);
   vec4 cp = u_m * vec4(p, 1.0), cq = u_m * vec4(q, 1.0);
   vec2 sp = cp.xy / max(cp.w, 1e-6) * u_vp * 0.5, sq = cq.xy / max(cq.w, 1e-6) * u_vp * 0.5;
   vec2 d = sq - sp; float l = length(d); d = l > 1e-6 ? d / l * a_se.y : vec2(1.0, 0.0);
   float k = u_wref > 0.0 ? clamp(u_wref / max(cp.w, 1e-6), 0.4, 2.5) : 1.0;
   vec2 nrm = vec2(-d.y, d.x) * a_se.x * u_w * k;
   gl_Position = cp + vec4(nrm / (u_vp * 0.5) * cp.w, 0.0, 0.0);
+  v_col = vec3(floor(a_cm.x / 65536.0), mod(floor(a_cm.x / 256.0), 256.0), mod(a_cm.x, 256.0)) / 255.0;
+  v_m = a_cm.y; v_z = a_p.z;
+}`;
+// u_c: a colour laid over the line's own by u_c.a (0 = the line's colour, 1 = all u_c: the white casing of the open
+// line; in between: the other lines stepping back to calm grey). A tunnel stretch (below UNDER_M) is dashed, u_dash
+// metres a period, and a little lighter: it reads as underground and still joins the ramp; u_dash < 0 = not drawn
+// (the underground view: its tubes are the tunnel).
+const TFS = `#version 300 es
+precision highp float;
+in vec3 v_col; in float v_m; in float v_z;
+uniform vec4 u_c; uniform float u_dash; uniform float u_a;
+out vec4 o;
+void main() {
+  float a = u_a;
+  if (v_z < ${(UNDER_M + RAIL_LIFT).toFixed(2)}) { if (u_dash < 0.0 || fract(v_m / u_dash) > 0.55) discard; a *= 0.85; }
+  o = vec4(mix(v_col, u_c.rgb, u_c.a) * a, a);
 }`;
 const QVS = `#version 300 es
 layout(location=0) in vec2 a_xy; void main() { gl_Position = vec4(a_xy, 0.0, 1.0); }`;
@@ -327,18 +348,20 @@ export function stationDepths(net, profiles, exag = 1) {
   return new Float32Array(out);
 }
 
-/** jaktrack: every track of the network as band vertices for TVS (p, q, side/end, offset here/there: 10 floats a vertex,
- * 6 vertices a piece), wherever the line is not in a tunnel: on the deck top where it is up, just above the ground
- * elsewhere. Two bands where the line has two tracks or more (half(i, m) metres either side of its path, where its
- * trains run), one on single track or where the tracks are unknown. Pieces follow the path's own segments, cut every
- * RAIL_STEP m so the spacing and the height follow their profiles. */
+/** jaktrack: every track of the network as band vertices for TVS (p, q, side/end, offset here/there, colour/metres:
+ * 12 floats a vertex, 6 vertices a piece) from end to end of each line: on the deck top where it is up, just above the
+ * ground elsewhere, at its depth in a tunnel (the shader dashes it there), so a line never stops at a tunnel mouth. Two
+ * bands where the line has two tracks or more (half(i, m) metres either side of its path, where its trains run), one on
+ * single track or where the tracks are unknown; where two tracks become one the two bands close in on each other
+ * (rails.js eases the spacing), never a jump. Pieces follow the path's own segments, cut every RAIL_STEP m so the
+ * spacing and the height follow their profiles. -> { data, ranges: per line [first vertex, count] } */
 export function railData(net, profiles, rails) {
-  const out = [];
+  const out = [], ranges = [];
   const lines = Array.isArray(net?.lines) ? net.lines : [];
   for (let i = 0; i < lines.length; i++) {
-    const t = trackOf(lines[i]), pr = profiles[i], k = t.k || 1;
+    const t = trackOf(lines[i]), pr = profiles[i], k = t.k || 1, first = out.length / 12;
     if (t.n < 2) continue;
-    const two = !!rails?.has(i);
+    const two = !!rails?.has(i), c = Math.max(0, packed(lines[i].color));
     for (const side of two ? [1, -1] : [0]) {
       for (let v = 0; v + 1 < t.n; v++) {
         const len = t.cum[v + 1] - t.cum[v];
@@ -347,41 +370,18 @@ export function railData(net, profiles, rails) {
         for (let j = 0; j < parts; j++) {
           const f0 = j / parts, f1 = (j + 1) / parts, m0 = t.cum[v] + len * f0, m1 = t.cum[v] + len * f1;
           const z0 = pr ? pr.at(m0 / k) : 0, z1 = pr ? pr.at(m1 / k) : 0;
-          if (z0 < UNDER_M && z1 < UNDER_M) continue;
-          const ax = t.x[v] + (t.x[v + 1] - t.x[v]) * f0, ay = t.y[v] + (t.y[v + 1] - t.y[v]) * f0, az = Math.max(0, z0) + RAIL_LIFT;
-          const bx = t.x[v] + (t.x[v + 1] - t.x[v]) * f1, by = t.y[v] + (t.y[v + 1] - t.y[v]) * f1, bz = Math.max(0, z1) + RAIL_LIFT;
+          const ax = t.x[v] + (t.x[v + 1] - t.x[v]) * f0, ay = t.y[v] + (t.y[v + 1] - t.y[v]) * f0, az = z0 + RAIL_LIFT;
+          const bx = t.x[v] + (t.x[v + 1] - t.x[v]) * f1, by = t.y[v] + (t.y[v + 1] - t.y[v]) * f1, bz = z1 + RAIL_LIFT;
           const o0 = two ? side * rails.half(i, m0 / k) : 0, o1 = two ? side * rails.half(i, m1 / k) : 0;
-          const A = (s, e) => out.push(ax, ay, az, bx, by, bz, s, e, o0, o1), B = (s, e) => out.push(bx, by, bz, ax, ay, az, s, e, o1, o0);
+          const A = (s, e) => out.push(ax, ay, az, bx, by, bz, s, e, o0, o1, c, m0 / k), B = (s, e) => out.push(bx, by, bz, ax, ay, az, s, e, o1, o0, c, m1 / k);
           A(1, 1); A(-1, 1); B(-1, -1);
           A(1, 1); B(-1, -1); B(1, -1);
         }
       }
     }
+    ranges[i] = [first, out.length / 12 - first];
   }
-  return new Float32Array(out);
-}
-
-/** jaktrack: the picked line as ribbon vertices (ribbonData's layout) wherever it is not in a tunnel: on the deck top where
- * it is up, just above the ground elsewhere, moved `off(m)` metres left of the chain's direction (the track of the open
- * train: the route lies under the train, not beside it). offs = one function per ribbon (two = both tracks of the line). */
-export function routeData(net, profiles, i, offs) {
-  const line = net?.lines?.[i], pr = profiles[i], out = [];
-  if (!line) return new Float32Array(0);
-  const t = trackOf(line), k = t.k || 1, [r, g, b] = rgb(line.color);
-  const P0 = [0, 0, 1, 0], P1 = [0, 0, 1, 0];
-  const vert = (P, Q, side, end) => out.push(P[0], P[1], P[2], Q[0], Q[1], Q[2], side, end, r, g, b, i);
-  for (const off of offs) {
-    for (let m = 0; m < t.length; m += ROUTE_STEP) {
-      const m1 = Math.min(t.length, m + ROUTE_STEP), z0 = pr ? pr.at(m / k) : 0, z1 = pr ? pr.at(m1 / k) : 0;
-      if (z0 < UNDER_M && z1 < UNDER_M) continue;   // the tunnel stretches stay the 2D map's dashed line
-      pointAt(t, m, P0); pointAt(t, m1, P1);
-      const o0 = off(m / k), o1 = off(m1 / k);
-      const A = [P0[0] - P0[3] * o0, P0[1] + P0[2] * o0, Math.max(0, z0) + OVER_LIFT], B = [P1[0] - P1[3] * o1, P1[1] + P1[2] * o1, Math.max(0, z1) + OVER_LIFT];
-      vert(A, B, 1, 1); vert(A, B, -1, 1); vert(B, A, -1, -1);
-      vert(A, B, 1, 1); vert(B, A, -1, -1); vert(B, A, 1, -1);
-    }
-  }
-  return new Float32Array(out);
+  return { data: new Float32Array(out), ranges };
 }
 
 /** jaktrack: the elevated stations (rail at least OVER_ST_M up): { data: [x, y, z] on the deck top, ranges: per line
@@ -443,7 +443,7 @@ export function createTrains3d(opts) {
   const leftOf = (li, mChain, kw) => (rails ? rails.offset(li, mChain) * wide(kw) : 0);   // m left of travel
   const tubeSide = (li) => (rails && rails.hand(li) > 0 ? -1 : 1);   // keep right: the right-hand bore / box track
   // the picked line's wide ribbon: its VAO, and what it was built for (line, the open train's direction or 0 = both tracks)
-  let rvao = null, rbuf = null, rcount = 0, rkey = '', selDir = 0, selSeen = null, kwNow = 1;
+  let tranges = [], kwNow = 1;
   let tprog = null, tvao = null, tbuf = null, tcount = 0;   // the visible tracks (railData)
   let vao = null, ibuf = null, qvao = null, qbuf = null, ovao = null, obuf = null, ocount = 0;
   let vbuf = null, ug = null, bores = null, hubs = [], fvao = null, fbuf = null, fcount = 0, ts = null;
@@ -592,7 +592,6 @@ export function createTrains3d(opts) {
         // jaktrack: the open train is never a ghost either (it was a flat box in its accent colour: an MRT train followed
         // through its tunnel in the surface view, or on its viaduct in the underground view, turned into a plain blue slab)
         const sel = selected != null && (tr.id === selected || tr.run?.key === selected) ? 4 : 0;
-        if (sel) { selDir = dir; selSeen = selected; }   // jaktrack: which way the open train heads (its route ribbon's track)
         // jaktrack: di mode bawah tanah kereta permukaan tetap digambar utuh (aslinya dipudarkan jadi balok abu-abu), supaya
         // unit kereta terlihat sama di kedua mode. Hanya kereta di bawah jalan pada 3D biasa yang tetap samar.
         const faint = !ridden && !sel && !under && isUnder;
@@ -775,7 +774,7 @@ export function createTrains3d(opts) {
     prog = compile(gl, VS, FS);
     rprog = compile(gl, RVS, RFS);
     qprog = compile(gl, QVS, QFS);
-    tprog = compile(gl, TVS, QFS);
+    tprog = compile(gl, TVS, TFS);
     pprog = compile(gl, PVS, PFS);
     // cars
     vao = gl.createVertexArray();
@@ -810,20 +809,21 @@ export function createTrains3d(opts) {
     [ovao, obuf] = ribbonVao(od);
     // jaktrack: the tracks: two bands where a line has two tracks, one on single track
     {
-      const td = railData(net, profiles, rails);
-      tcount = td.length / 10;
+      const { data: td, ranges } = railData(net, profiles, rails);
+      tranges = ranges;
+      tcount = td.length / 12;
       st.tracks = tcount / 6;
       tvao = gl.createVertexArray();
       gl.bindVertexArray(tvao);
       tbuf = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, tbuf);
-      gl.bufferData(gl.ARRAY_BUFFER, td.byteLength ? td : new Float32Array(10), gl.STATIC_DRAW);
-      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 40, 0);
-      gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 40, 12);
-      gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 40, 24);
-      gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 2, gl.FLOAT, false, 40, 32);
+      gl.bufferData(gl.ARRAY_BUFFER, td.byteLength ? td : new Float32Array(12), gl.STATIC_DRAW);
+      gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 48, 0);
+      gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 48, 12);
+      gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 2, gl.FLOAT, false, 48, 24);
+      gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 2, gl.FLOAT, false, 48, 32);
+      gl.enableVertexAttribArray(4); gl.vertexAttribPointer(4, 2, gl.FLOAT, false, 48, 40);
     }
-    [rvao, rbuf] = ribbonVao(new Float32Array(0));   // jaktrack: the picked line's ribbon, filled when a line is picked
     // jaktrack: the elevated stations' dots on the deck tops
     pover = overStations(net, profiles);
     st.overStations = pover.data.length / 3;
@@ -883,6 +883,35 @@ export function createTrains3d(opts) {
     timer = setTimeout(() => { timer = 0; if (!dead && mode.on) map.triggerRepaint(); }, ms);
   }
 
+  /** jaktrack: the tracks (railData), under everything else of the railway: each line's tracks in its colour, both
+   * directions alike, widened exactly as the trains are, so a train always stands on its band. With a line open (a line
+   * or a train of it) the other lines step back to calm grey and BOTH its tracks wear the 2D map's picked look (white
+   * casing, its colour). flat = the underground view: on the street, the tunnel stretches left to the tubes. */
+  function drawRails(W, H, dpr, flat) {
+    const cc = map.getCenter();
+    toLocal(cc.lng, cc.lat, A);
+    const cw = M32[3] * A[0] + M32[7] * A[1] + M32[15];   // clip w of the map's centre (the band's width is true there)
+    const hw = Math.max(0.9 * dpr, RAIL_W * kwNow / 2 / mppNow * dpr), pk = pickedLine != null ? tranges[pickedLine] : null;
+    gl.useProgram(tprog.p);
+    gl.uniformMatrix4fv(tprog.u.u_m, false, M32);
+    gl.uniform2f(tprog.u.u_vp, W, H);
+    gl.uniform1f(tprog.u.u_wide, wide(kwNow));
+    gl.uniform1f(tprog.u.u_wref, cw > 0 ? cw : 0);
+    gl.uniform1f(tprog.u.u_flat, flat ? 0 : 1);
+    gl.uniform1f(tprog.u.u_dash, flat ? -1 : Math.max(16, 9 * mppNow));
+    gl.uniform1f(tprog.u.u_a, flat ? 0.8 : 1);
+    gl.uniform1f(tprog.u.u_w, hw);
+    gl.uniform4f(tprog.u.u_c, RAIL_GREY[0], RAIL_GREY[1], RAIL_GREY[2], pk ? 0.75 : 0);
+    gl.bindVertexArray(tvao);
+    gl.drawArrays(gl.TRIANGLES, 0, tcount);
+    if (pk) {
+      gl.uniform1f(tprog.u.u_w, hw + 1.8 * dpr); gl.uniform4f(tprog.u.u_c, 1, 1, 1, 1);
+      gl.drawArrays(gl.TRIANGLES, pk[0], pk[1]);
+      gl.uniform1f(tprog.u.u_w, hw + 0.5 * dpr); gl.uniform4f(tprog.u.u_c, 0, 0, 0, 0);
+      gl.drawArrays(gl.TRIANGLES, pk[0], pk[1]);
+    }
+  }
+
   const layer = {
     id: TRAINS3D_ID,
     type: 'custom',
@@ -890,9 +919,9 @@ export function createTrains3d(opts) {
     onAdd(m, g) { map = m; try { init(g); } catch (e) { reason = 'shader'; console.warn('[city3d] trains', e); } },
     onRemove() {
       if (!gl || reason) return;
-      for (const b of [vbuf, ibuf, qbuf, obuf, fbuf, pbuf, rbuf, tbuf]) if (b) gl.deleteBuffer(b);
+      for (const b of [vbuf, ibuf, qbuf, obuf, fbuf, pbuf, tbuf]) if (b) gl.deleteBuffer(b);
       if (tvao) gl.deleteVertexArray(tvao);
-      for (const v of [vao, qvao, ovao, fvao, pvao, rvao]) if (v) gl.deleteVertexArray(v);
+      for (const v of [vao, qvao, ovao, fvao, pvao]) if (v) gl.deleteVertexArray(v);
       for (const p of [prog, rprog, qprog, pprog, tprog]) if (p) gl.deleteProgram(p.p);
       ug?.destroy(); ug = null; bores?.destroy(); bores = null; ts?.destroy?.(); ts = null;
       gl = null;
@@ -942,22 +971,7 @@ export function createTrains3d(opts) {
         gl.depthFunc(gl.LEQUAL);
         gl.depthMask(false);
         const dpr = W / Math.max(1, map.getCanvas().clientWidth || W);
-        // jaktrack: the tracks, under everything else of the railway: a calm grey band where each direction's trains run
-        // (two on double track, one on single), widened exactly as the trains are, so a train always stands on its band
-        if (tcount && mode.trains) {
-          const cc = map.getCenter();
-          toLocal(cc.lng, cc.lat, A);
-          const cw = M32[3] * A[0] + M32[7] * A[1] + M32[15];   // clip w of the map's centre (the band's width is true there)
-          gl.useProgram(tprog.p);
-          gl.uniformMatrix4fv(tprog.u.u_m, false, M32);
-          gl.uniform2f(tprog.u.u_vp, W, H);
-          gl.uniform1f(tprog.u.u_wide, wide(kwNow));
-          gl.uniform1f(tprog.u.u_wref, cw > 0 ? cw : 0);
-          gl.uniform1f(tprog.u.u_w, Math.max(0.9 * dpr, RAIL_W * kwNow / 2 / mppNow * dpr));
-          gl.uniform4f(tprog.u.u_c, RAIL_GREY[0], RAIL_GREY[1], RAIL_GREY[2], 1);
-          gl.bindVertexArray(tvao);
-          gl.drawArrays(gl.TRIANGLES, 0, tcount);
-        }
+        if (tcount && mode.trains) drawRails(W, H, dpr, false);
         gl.useProgram(rprog.p);
         gl.uniformMatrix4fv(rprog.u.u_m, false, M32);
         gl.uniform2f(rprog.u.u_vp, W, H);
@@ -969,30 +983,6 @@ export function createTrains3d(opts) {
         gl.uniform1f(rprog.u.u_w, 1.3 * dpr); gl.uniform1f(rprog.u.u_white, 0);
         if (!(tcount && mode.trains)) gl.drawArrays(gl.TRIANGLES, 0, ocount);   // the one thin centre line only where the tracks are not drawn
         gl.uniform1f(rprog.u.u_skip, -9);
-        // jaktrack: the open line / the open train's line as the 2D map draws it (white casing, its colour), drawn here
-        // because MapLibre cannot raise a line layer: on the deck top where the line is up, and on the open train's own
-        // track where there are two (its ground copy is off while the 3D trains show, index.js raiseNet), so the route
-        // lies under the train instead of beside it. A line opened without a train shows both its tracks.
-        if (pickedLine != null) {
-          const dirNow = selected != null && selSeen === selected ? selDir : 0;
-          const wk = wide(kwNow), key = `${pickedLine}:${rails?.has(pickedLine) ? `${dirNow}:${wk}` : 'c'}`;
-          if (key !== rkey) {
-            rkey = key;
-            const li = pickedLine, cl = (m) => rails.offset(li, m) * wk;   // m left of travel = m left of the chain for a train heading up it
-            const offs = !rails?.has(li) ? [() => 0] : dirNow ? [(m) => dirNow * cl(m)] : [cl, (m) => -cl(m)];
-            const rd = routeData(net, profiles, li, offs);
-            rcount = rd.length / 12;
-            gl.bindBuffer(gl.ARRAY_BUFFER, rbuf);
-            gl.bufferData(gl.ARRAY_BUFFER, rd.byteLength ? rd : new Float32Array(12), gl.DYNAMIC_DRAW);
-          }
-          if (rcount) {
-            gl.bindVertexArray(rvao);
-            gl.uniform1f(rprog.u.u_w, 6.5 * dpr); gl.uniform1f(rprog.u.u_white, 1);
-            gl.drawArrays(gl.TRIANGLES, 0, rcount);
-            gl.uniform1f(rprog.u.u_w, 4 * dpr); gl.uniform1f(rprog.u.u_white, 0);
-            gl.drawArrays(gl.TRIANGLES, 0, rcount);
-          }
-        }
         // the elevated stations on their decks: every one calm grey, the picked line's ringed in its colour
         if (st.overStations) {
           gl.useProgram(pprog.p);
@@ -1096,6 +1086,12 @@ export function createTrains3d(opts) {
           gl.uniform1f(rprog.u.u_white, UGU.ceiling ? 0.2 : 0.55);
           gl.bindVertexArray(fvao);
           gl.drawArrays(gl.TRIANGLES, 0, fcount);
+        }
+        // jaktrack: the open stretches of every line flat on the street, in colour over the veil: a tube starts where
+        // its line's tracks arrive, not out of nothing (the tunnel stretches are the tubes themselves)
+        if (tcount && UGU.street && !fly) {
+          gl.disable(gl.DEPTH_TEST);
+          drawRails(W, H, W / Math.max(1, map.getCanvas().clientWidth || W), true);
         }
       }
       gl.bindVertexArray(null);

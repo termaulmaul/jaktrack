@@ -154,3 +154,29 @@ Tidak diuji: izin lokasi yang ditolak pengguna di konteks aman (hanya teksnya ya
 Catatan jujur tentang butir 13: dari 18 tangkapan rentang zoom, yang saya lihat satu per satu adalah zoom 14,5, 16, dan 17 (MRT) serta 15,5 dan 19 (Depok); sisanya diambil tetapi tidak saya buka. Tangkapan rentang zoom diambil saat pita rel masih selebar 1,9 m (kemudian dirampingkan menjadi 1,4 m). Bahwa dua badan kereta tidak bisa saling menutupi di ruas ganda pada zoom mana pun mengikuti dari hitungannya (jarak sumbu ≥ 4 m × pelebaran, lebar badan 2,95 m × pelebaran), bukan hanya dari tangkapan.
 
 Yang tidak diuji: zoom di bawah 14,2 (di sana kereta 3D tidak tampil), perangkat sungguhan, mode "Skala asli" di Bawah tanah, dan ujung jalur selain Lebak Bulus.
+
+## Tambahan 15 November 2026: warna rel dan kesinambungan garis jalur
+
+Uji dengan cara yang sama (Chromium lewat Playwright MCP, `PORT=4793 bun web/dev-server.mjs`, pemutaran 08.10, desktop 1440×900 dan satu tangkapan ponsel 390×844). Bukti: `var/shots/v5-a-sebelum-*.png` dan `v5-a-sesudah-*.png` dari sudut yang sama. Galat dan peringatan konsol: 0 di semua langkah.
+
+| # | Butir | Hasil | Bukti |
+|---|---|---|---|
+| A1 | 3D: kedua rel MRT berwarna merah di viaduk | Lulus | `v5-a-sesudah-3d-viaduk.png` (sebelum: dua pita abu-abu) |
+| A2 | 3D: kereta dibuka, sorotan di kedua rel, rel jalur lain abu-abu | Lulus | `v5-a-sesudah-3d-kereta-terpilih-ikut.png` (sebelum: satu rel merah, satu abu-abu, `v5-a-sebelum-3d-kereta-terpilih-landaian.png`) |
+| A3 | 3D: jalur dibuka dari tab Jalur, sorotan di kedua rel | Lulus | `v5-a-sesudah-3d-jalur-terpilih-landaian.png` |
+| A4 | 3D: landaian ASEAN–Senayan, rel menerus dari dek ke terowongan | Lulus | `v5-a-sesudah-3d-landaian.png`, `-landaian-jauh.png` (sebelum: rel berhenti di mulut terowongan) |
+| A5 | 3D: terowongan Senayan–Bundaran HI terbaca, dua rel putus-putus | Lulus | `v5-a-sesudah-3d-terowongan.png`, `-3d-bundaran-hi.png` (sebelum: garis nyaris tak terlihat) |
+| A6 | 3D: ujung Lebak Bulus | Lulus | `v5-a-sesudah-3d-lebak-bulus.png` |
+| A7 | Zoom 14,0 dan 14,4 dengan 3D menyala: satu garis berwarna, lalu dua rel berwarna, tanpa garis ganda | Lulus | `v5-a-sesudah-3d-landaian-z14_0.png`, `-z14_4.png`; filter `tk-rest` dan `tk-rest-ug` kosong di 14,4 dan kembali di 14,0 |
+| A8 | 2D: garis menerus lewat mulut terowongan, ruas terowongan putus-putus | Lulus | `v5-a-sesudah-2d-landaian-z15.png`, `-2d-mrt-z13.png` |
+| A9 | Bawah tanah: dua rel berwarna tiba di mulut kedua tabung | Lulus | `v5-a-sesudah-bawah-tanah-landaian.png`, `-mulut-dekat.png`, `-bundaran-hi.png` |
+| A10 | Keluar dari Bawah tanah lalu 3D mati: warna dan filter garis 2D kembali seperti semula | Lulus | `line-color` `#AAAAB0`, filter `ug == 0` / `ug == 1`; `v5-a-sesudah-2d-sesudah-3d-mati.png` |
+| A11 | Jalur lain: LRT Jakarta (Velodrome), LRT Jabodebek (Pancoran), KRL Juanda, KRL Kebayoran, KRL Manggarai | Lulus | `v5-a-sesudah-3d-lrtj-velodrome.png`, `-jbdb-pancoran.png`, `-krl-juanda.png`, `-krl-kebayoran.png`, `-krl-manggarai.png` |
+| A12 | Rel tunggal dan peralihan tunggal ke ganda | Lulus | `v5-a-sesudah-3d-krl-cibinong-tunggal.png`, `-krl-citayam-tunggal-ganda.png`, `-lrtj-kelapa-gading-tunggal-ganda.png` (dua pita merapat jadi satu) |
+| A13 | Ponsel 390×844: landaian di 3D | Lulus | `v5-a-sesudah-ponsel-3d-landaian.png` |
+
+Catatan:
+
+- Di 3D biasa rel terowongan digambar pada kedalamannya, jadi pada peta yang dimiringkan garisnya tampak sedikit di bawah titik stasiun bawah tanah (titik itu tetap di permukaan jalan). Kereta samar di terowongan berada tepat di relnya.
+- Celah sangat pendek pada rel di beberapa tempat (misalnya dekat Cibinong) adalah gedung peta dasar yang berdiri di atas lintasan dan menutupi rel; bukan rel yang terputus.
+- Ride "Dari belakang" dan Terbang bebas dijalankan sekali sesudah perubahan ini: keduanya mulai tanpa galat konsol (`v5-a-sesudah-ride-dari-belakang.png`). Tidak diuji: ride "Kabin", pergantian gaya peta (`style.load`) saat 3D menyala, dan perangkat tanpa WebGL2.

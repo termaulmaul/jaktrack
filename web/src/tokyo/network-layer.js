@@ -2,7 +2,7 @@
 // in the calm look of web/src/map/network.js: colour only on data.
 // - At rest every line is a thin grey line (kereta's #8B8B93 at 70 %, drawn opaque so shared corridors never stack
 //   into darker blotches). Its tunnels (the heights build's elev-v1.json: rail level below the street; without it, line.underground)
-//   are faint, thin and dashed in the same calm grey, switching where the tunnel starts (where trains.js turns trains
+//   are dashed in the same calm grey and width, switching where the tunnel starts (where trains.js turns trains
 //   to their below-ground look); its viaducts (>= 6 m up) get a light deck with a soft edge from z14, so raised lines
 //   read as raised. No line colour at rest: ODPT's licence wants official line colours unmodified wherever a line's
 //   colour is shown, so a line's colour appears only when it is picked, exactly as published. Lines that share a
@@ -105,7 +105,6 @@ const LANE_OFFSET = ['interpolate', ['linear'], ['zoom'], ...LANE_PX.flatMap(([z
 const dotSize = (lanes, scaled = false) => ['interpolate', ['linear'], ['zoom'],
   ...LANE_PX.flatMap(([z, px]) => [z, scaled ? ['*', ['get', 'dsc'], (px * lanes) / DISC_PX] : (px * lanes) / DISC_PX])];
 const REST_W = exp([8, 0.7, 10, 1.0, 12, 1.5, 14, 2.1, 16, 2.9, 18, 3.9]);
-const UG_W = exp([8, 0.6, 10, 0.85, 12, 1.2, 14, 1.6, 16, 2.2, 18, 3.0]);
 /** the heights build height (m) from which a stretch is drawn as a viaduct. */
 export const VIADUCT_M = 6;
 const VIA_ON = lin([13.5, 0, 14, 1]);
@@ -471,7 +470,8 @@ export function addNetwork(map, net, opts = {}) {
   // at rest, bottom to top: tunnels (faint calm-grey dashes, under everything), viaduct decks (a light band with a soft
   // edge from z14, under the lines on them), the lines at grade and up
   layer({ id: 'tk-rest-ug', type: 'line', source: 'tk-lines', filter: ['==', ['get', 'ug'], 1], layout: { 'line-cap': 'butt', 'line-join': 'round' },
-    paint: { 'line-color': REST.ug, 'line-width': UG_W, 'line-offset': LANE_OFFSET, 'line-dasharray': [2.4, 1.6] } });
+    // jaktrack: the line's own grey and width, dashed: a tunnel reads as the same line going under, not as a line that ends
+    paint: { 'line-color': REST.line, 'line-width': REST_W, 'line-offset': LANE_OFFSET, 'line-dasharray': [2.4, 1.6] } });
   layer({ id: 'tk-via-edge', type: 'line', source: 'tk-lines', minzoom: 13.5, filter: ['==', ['get', 'via'], 1], layout: lineLayout,
     paint: { 'line-color': '#B9B9C0', 'line-width': exp([13.5, 4.6, 16, 6.6, 18, 8.8]), 'line-offset': LANE_OFFSET, 'line-opacity': VIA_ON } });
   layer({ id: 'tk-via-deck', type: 'line', source: 'tk-lines', minzoom: 13.5, filter: ['==', ['get', 'via'], 1], layout: lineLayout,

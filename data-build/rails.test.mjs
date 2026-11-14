@@ -85,3 +85,33 @@ test('rel terlihat: pelebaran jarak rel tidak pernah lebih sempit dari badan ker
   expect(kwAtZoom(19)).toBe(1);
   expect(kwAtZoom(14)).toBe(8);
 });
+
+test('rel terlihat: kedua rel berwarna jalurnya dan menerus dari viaduk lewat landaian sampai ujung terowongan', async () => {
+  const { railData, UNDER_M } = await import('../web/src/layers/city3d/vehicles.js');
+  const line = { id: 'mrt.X.0', color: '#D6002A', path: [[LNG0, LAT], [LNG0 + 1000 * perM, LAT], [LNG0 + 3000 * perM, LAT]] };
+  const net = { lines: [line, { id: 'krl.Y.1', color: '#00A651', path: path }] };
+  // viaduk 17 m sampai 1 km, landaian sampai 2 km, terowongan -18 m sesudahnya
+  const prof = { at: (m) => (m < 1000 ? 17 : m < 2000 ? 17 - 35 * (m - 1000) / 1000 : -18) };
+  const pack = { tracks: { 'mrt.X.0': [[0, 2000, 2, 2], [2000, 4000, 2, 6]] }, hand: { 'mrt.X.0': 1 } };
+  const { data, ranges } = railData(net, [prof, null], railsOf(net, pack));
+  const V = 12, [first, count] = ranges[0];
+  expect(first).toBe(0); expect(ranges[1][0]).toBe(count);
+  const sides = { '1': [], '-1': [] };
+  for (let v = first; v < first + count; v += 6) {                    // tiap potong: titik pertama (A) dan ketiga (B)
+    const a = data.subarray(v * V, v * V + V), b = data.subarray((v + 2) * V, (v + 2) * V + V);
+    expect(a[10]).toBe(0xD6002A);                                     // warna jalur, di kedua rel
+    expect(Math.abs(a[8])).toBeGreaterThanOrEqual(2);                 // dua rel: tidak pernah di garis tengah
+    sides[Math.sign(a[8])].push([a[11], b[11], a[2], b[2]]);
+  }
+  for (const s of [sides['1'], sides['-1']]) {
+    expect(s[0][0]).toBe(0);
+    for (let i = 1; i < s.length; i++) expect(s[i][0]).toBeCloseTo(s[i - 1][1], 3);   // tanpa celah, mulut terowongan termasuk
+    expect(s[s.length - 1][1]).toBeGreaterThan(2990);                 // sampai ujung jalur di dalam terowongan
+    expect(s.some((p) => p[2] > 17)).toBe(true);                      // di atas dek
+    expect(s.some((p) => p[2] < UNDER_M && p[3] < UNDER_M)).toBe(true);   // di kedalaman terowongan (digambar putus-putus)
+  }
+  expect(sides['1'].length).toBe(sides['-1'].length);
+  // jalur tanpa data jumlah rel: satu rel di garis jalur, berwarna jalurnya
+  const o = ranges[1][0] * V;
+  expect(data[o + 8]).toBe(0); expect(data[o + 10]).toBe(0x00A651);
+});
