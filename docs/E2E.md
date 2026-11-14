@@ -94,3 +94,37 @@ Keputusan ada di pemilik repo.
 | 12 | Tanpa galat konsol | Lulus | 0 error; satu peringatan MapLibre `Too many glyphs` saat ride (sudah dicatat di atas) |
 
 Tidak diuji ulang: bus, CCTV, pencarian, tampilan ponsel, dan bahasa EN selain label tombol ride.
+
+## Uji ulang setelah pemisahan dua arah dan perbaikan lokasi
+
+15 November 2026, data dibangun ulang dengan jumlah rel per ruas. Desktop 1440×900 kecuali disebut lain, bahasa Indonesia. **16 butir, 16 lulus.** Bukti berawalan `v3-` di `var/shots/`. Tangkapan "sebelum" untuk kereta berpapasan tidak diambil; pembandingnya tangkapan pemilik repo (dua kereta MRT bertumpuk di satu garis di viaduk).
+
+| # | Butir | Hasil | Bukti |
+|---|---|---|---|
+| 1 | 3D: dua kereta MRT berpapasan di viaduk, masing-masing di relnya | Lulus | `v3-sesudah-mrt-berpapasan-viaduk-3d.png` (07.30, antara Blok A dan Blok M) |
+| 2 | 3D: dua kereta KRL berpapasan di permukaan | Lulus | `v3-sesudah-krl-berpapasan-3d.png` (Lin Bogor, dekat Pasar Minggu Baru) |
+| 3 | 2D zoom dekat: dua arah di sisi garis yang berbeda | Lulus | `v3-sesudah-mrt-berpapasan-2d.png`, `v3-sesudah-krl-berpapasan-2d.png` |
+| 4 | Mode Bawah tanah: dua kereta MRT, tiap arah di tabungnya | Lulus | `v3-sesudah-mrt-berpapasan-terowongan.png` (Bendungan Hilir–Istora) |
+| 5 | Rel tunggal: kereta tetap di garis jalur | Lulus | `v3-sesudah-rel-tunggal-3d.png`, `v3-sesudah-rel-tunggal-2d.png` (KA Pangrango, lintas Sukabumi) |
+| 6 | 3D: kereta diikuti, garis rute tepat di bawahnya | Lulus | `v3-sesudah-mrt-diikuti-3d.png`, `v3-sesudah-krl-diikuti-3d.png`; 0 fitur `tk-pick` di tanah, kereta arah lawan di rel sebelah |
+| 7 | Ikuti kereta di 2D | Lulus | `v3-e2e-ikuti-2d.png`; "Berhenti mengikuti" aktif, garis rute 2D tergambar |
+| 8 | Pemutaran waktu | Lulus | 102 kereta dan 5.623 bus pada 07.30; diputar 60× selama 3 detik: 07.30 → 07.33 |
+| 9 | Ride "Dari belakang" dan "Kabin" | Lulus | `v3-e2e-ride-dari-belakang.png`, `v3-e2e-ride-kabin.png`; label tombol "Ikut di terowongan" di terowongan |
+| 10 | 2D utuh setelah 3D dimatikan | Lulus | Filter `tk-pick` kembali `["==",["get","ug"],0]` |
+| 11 | Lokasi tanpa stasiun tersimpan: "Kereta di dekatku" | Lulus | `v3-sesudah-lokasi-tanpa-stasiun-kereta-di-dekatku.png`; penyimpanan lokal kosong, baris itu tampil sendiri di Beranda, hasil: Blok M 10 m |
+| 12 | Lokasi tanpa stasiun tersimpan: tombol lokasi di kartu peta | Lulus | `v3-sesudah-lokasi-tanpa-stasiun-tombol-peta.png`; peta terbang ke lokasi, daftar "Di dekatmu" terisi |
+| 13 | Tombol lokasi saat kereta terbuka tidak menutup layar kereta | Lulus | Hash tetap `#t=mrt.MRT.9.M-L0713-BHI` |
+| 14 | Konteks tidak aman (http lewat alamat LAN, 390×844): tombol peta | Lulus | `v3-sesudah-lokasi-http-lan-tombol-peta.png`; `isSecureContext = false`, pesan "Lokasi hanya tersedia lewat https atau localhost." |
+| 15 | Konteks tidak aman: "Kereta di dekatku" | Lulus | `v3-sesudah-lokasi-http-lan-kereta-di-dekatku.png`; pesan yang sama dengan penjelasan http |
+| 16 | Tanpa galat konsol | Lulus setelah perbaikan | Blok "Kereta di dekatku" meminta `exits-v1.json` (404) setelah lokasi terbaca; kini diperiksa lewat `packs.json` dulu. Diulang: 0 error |
+
+Yang menghalangi lokasi sebelumnya:
+
+- Lewat alamat LAN dengan http, browser menolak geolokasi tanpa bertanya, dan halaman menampilkan "Izin lokasi ditolak. Pilih stasiun dari daftar." Pesan itu salah sebab (bukan izin yang ditolak) dan menyuruh memilih stasiun.
+- Di Beranda tanpa stasiun tersimpan, satu-satunya tombol "Kereta di dekatku" berada di dalam kartu "Pilih stasiunmu"; baris lokasi yang berdiri sendiri baru muncul setelah ada stasiun tersimpan.
+- Tombol lokasi di kartu peta selalu memindahkan pengguna ke tab Stasiun, juga saat sebuah kereta atau stasiun sedang dibuka.
+- Pesan gagal lainnya ("Pilih stasiunmu saja…", "Pilih stasiunmu untuk melihat kereta berikutnya.") mengarahkan ke pemilihan stasiun.
+
+Lokasi tetap tidak disimpan dan tidak dikirim ke mana pun; yang disimpan hanya tanda `tokyo.nearby=1` (pengguna pernah menyalakan "Kereta di dekatku"), perilaku yang sudah ada. Tidak ada geolokasi di kode bus; halte terdekat tidak memakai lokasi pengguna.
+
+Tidak diuji: izin lokasi yang ditolak pengguna di konteks aman (hanya teksnya yang diubah), perangkat sungguhan, CCTV, pencarian.

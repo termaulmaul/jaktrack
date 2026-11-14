@@ -670,7 +670,7 @@ function picker(ctx, m) {
   const art = ctx?.art?.anker;
   return `<section class="kr-pick" aria-label="${esc(t('my.pick'))}"><div class="kr-pickh">${art ? `<img src="${esc(art)}" width="72" height="72" alt="" draggable="false" decoding="async">` : ''}
     <div><b>${esc(t('my.pick'))}</b><span>${esc(t('my.pick.sub'))}</span></div></div>
-    <button type="button" class="btn" data-act="locate">${icon('locate')}${esc(ctx?.nearby ? t('nb.go') : t('locate'))}</button>
+    ${ctx?.nearby ? '' : `<button type="button" class="btn" data-act="locate">${icon('locate')}${esc(t('locate'))}</button>`}
     <div class="kr-hubs">${hubs.map((id) => `<button type="button" class="chip" data-home="${esc(id)}">${esc(stName(m, idx(m).station.get(id)))}</button>`).join('')}</div></section>`;
 }
 

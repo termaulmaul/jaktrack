@@ -743,7 +743,7 @@ function picker() {
   const hubs = HUBS.filter((id) => S.ix.stationIx.has(id)).slice(0, 8);
   return `<section class="kr-pick" aria-label="${esc(t('my.pick'))}"><div class="kr-pickh"><img src="${esc(ART.anker)}" width="72" height="72" alt="" draggable="false" decoding="async">
     <div><b>${esc(t('my.pick'))}</b><span>${esc(t('my.pick.sub'))}</span></div></div>
-    <button type="button" class="btn" data-act="locate">${icon('locate')}${esc(S.nearby && I.has('nb.go') ? t('nb.go') : t('locate'))}</button>
+    ${S.nearby ? '' : `<button type="button" class="btn" data-act="locate">${icon('locate')}${esc(t('locate'))}</button>`}
     <div class="tk-hubs">${hubs.map((id) => `<button type="button" class="chip" data-home="${esc(id)}">${esc(nm(S.ix.station(id).name))}</button>`).join('')}</div></section>`;
 }
 function lineRow(l, r) {
@@ -910,6 +910,8 @@ function nearest(lng, lat, n = 4) {
 }
 function locate() {
   const btn = $('#b-locate');
+  // jaktrack: over plain http on a LAN address the browser refuses the location without asking; say why, honestly
+  if (window.isSecureContext === false) { S.nearState = { st: 'fail' }; toast(t('loc.insecure')); render(); return; }
   if (!navigator.geolocation) { S.nearState = { st: 'fail' }; toast(t('loc.none')); render(); return; }
   btn.setAttribute('aria-busy', 'true');
   if (S.nearState?.st !== 'ok') { S.nearState = { st: 'wait' }; if (S.tab === 'stations' && !S.stack.length) render(); }
@@ -921,7 +923,10 @@ function locate() {
     if (S.map) S.map.flyTo({ center: [lng, lat], zoom: Math.max(S.map.getZoom(), 14), duration: reduceMotion() ? 0 : 800 });
     if (!S.model) return;
     S.near = nearest(lng, lat, 4);
-    if (S.tab !== 'stations' || S.stack.length) goTab('stations'); else render();
+    // jaktrack: the stations near the fix are listed on the Stations tab, but an open train / station / line stays open
+    // (the map has flown to the user; nothing has to be picked)
+    if (S.stack.length) { render(); return; }
+    if (S.tab !== 'stations') goTab('stations'); else render();
     if (!isDesktop()) sheet.snap('half');
   }, (err) => {
     btn.removeAttribute('aria-busy');
@@ -949,8 +954,6 @@ app.addEventListener('click', (e) => {
   if (d.act === 'see-ug') { seeUnderground(d.id); return; }   // the underground view
   if (d.act === 'ride-ug') { rideUnderground(d.id); return; }   // ride along in the tunnel
   if (d.act === 'locate') {
-    // on Home without a saved station the picker card's pill starts "Trains near me" (the map's #b-locate keeps locate)
-    if (S.nearby && S.home == null && screen().name === 'home') { S.nearby.start(); if (!isDesktop()) sheet.snap('half'); return; }
     locate(); return;
   }
   if (d.act === 'change-home') { goTab('stations'); return; }
@@ -2051,15 +2054,17 @@ need('playback').then((pb) => {
 
 // "Trains near me" above the home view. Location only after its button is
 // tapped; the block owns #tk-nearby (shows on the home only, watches the position only while it shows).
-need('nearby').then((nb) => {
+need('nearby').then(async (nb) => {
   if (typeof nb?.mountNearby !== 'function') return;
+  const hasExits = await hasPack('exits-v1.json').catch(() => true);
   const el = document.createElement('div');
   el.id = 'tk-nearby';
   viewEl.before(el);
   try {
     S.nearby = nb.mountNearby(el, { model: () => S.sim, open, now: NOW, live: liveOn, visible: () => screen().name === 'home' && !S.q.trim(),
       onLocation: (p, acc) => { S.tm?.setUserLocation?.(p, acc); if (!S.nearDay) { S.nearDay = true; wantDay(true); } },   // nearby boards need the day
-      say, idle: () => S.home != null });   // no saved station = Home's card pill is the one near-me entry
+      say, exits: hasExits, idle: true });   // jaktrack: "Trains near me" is always its own row on Home, saved station or not: asking for the
+      // location never goes through the "Pick your station" card (that card no longer carries the near-me button)
   } catch (e) { console.warn('[tokyo] nearby', e); S.errors.push(`nearby: ${e?.message || e}`); }
 });
 

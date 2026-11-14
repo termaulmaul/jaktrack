@@ -246,7 +246,7 @@ const pickBtns = (retry = true) => `<div class="nb-acts"><button type="button" c
 const askBtn = (label, busy = false) => `<button type="button" class="btn nb-btn" data-nb="${busy ? 'wait' : 'start'}"${busy ? ' aria-busy="true" aria-disabled="true"' : ''}>${icon('locate')}<span>${esc(label)}</span></button>`;
 
 /**
- * The block's HTML for a view state: { st: 'idle' | 'wait' | 'ok' | 'far' | 'denied' | 'unavail' | 'nogeo',
+ * The block's HTML for a view state: { st: 'idle' | 'wait' | 'ok' | 'far' | 'denied' | 'unavail' | 'nogeo' | 'insecure',
  * m (model.js model), data (nearbyData), acc (metres), liveAt (ms of the newest live data shown, or null) }.
  */
 export function renderNearby(v) {
@@ -256,6 +256,7 @@ export function renderNearby(v) {
   if (st === 'idle') return wrap(`${askBtn(I.t('nb.go'))}${privacy()}`);
   if (st === 'wait') return wrap(`${askBtn(v.m ? I.t('nb.wait') : I.t('data.loading'), true)}<p class="nb-sub">${esc(I.t('nb.wait.sub'))}</p>${privacy(offBtn())}`);
   const msg = (title, body, retry = true, off = false) => wrap(`${head()}<div class="nb-msg" role="status"><b>${esc(title)}</b>${body ? `<span>${esc(body)}</span>` : ''}${pickBtns(retry)}</div>${privacy(off ? offBtn() : '')}`);
+  if (st === 'insecure') return msg(I.t('loc.insecure'), I.t('nb.insecure.sub'), false);
   if (st === 'denied') return msg(I.t('nb.denied'), I.t('nb.denied.sub'));
   if (st === 'nogeo') return msg(I.t('nb.nogeo'), I.t('nb.pick.sub'), false);
   if (st === 'unavail') return msg(I.t('nb.unavail'), I.t('nb.pick.sub'), true, true);
@@ -347,6 +348,7 @@ export function mountNearby(el, ctx = {}) {
   const visible = () => !docHidden() && (typeof ctx.visible === 'function' ? !!ctx.visible() : defaultVisible());
   // idle false (or a function answering false) = no "Trains near me" row of its own: the page's one near-me
   // entry (Home's card pill) calls start(); the block shows from that tap on and hides again after "Turn off"
+  const secure = () => (ctx.secure !== undefined ? !!(typeof ctx.secure === 'function' ? ctx.secure() : ctx.secure) : (typeof window === 'undefined' || window.isSecureContext !== false));
   const idleRow = () => (typeof ctx.idle === 'function' ? !!ctx.idle() : ctx.idle !== false);
   const showing = (vis = visible()) => vis && (S.st !== 'idle' || idleRow());
   const S = { st: 'idle', on: false, watch: null, fix: null, drawnAt: null, data: null, shown: null, timer: null, moveTimer: null,
@@ -359,6 +361,7 @@ export function mountNearby(el, ctx = {}) {
   function wantExits() {
     if (EX || exTried) return;
     exTried = true;
+    if (ctx.exits === false) return;   // jaktrack: the page knows the exits pack was not built: no fetch, no 404 in the console
     import('./exits.js').then(async (mod) => {
       if (!mod?.nearestExit) return;
       if (!mod.exitsData?.()) { try { await mod.loadExits?.(ctx.dataBase || '/data/tokyo/'); } catch { /* no exit data: no line */ } }
@@ -506,6 +509,8 @@ export function mountNearby(el, ctx = {}) {
   // ---- the button and the other taps
   function start() {
     if (S.gone) return;
+    // jaktrack: plain http on a LAN address: the browser refuses without asking, so say that instead of "denied"
+    if (!secure()) { S.on = false; S.st = 'insecure'; draw(); sync(); return; }
     if (!geo?.watchPosition) { S.on = false; S.st = 'nogeo'; draw(); sync(); return; }
     S.on = true; remember(true);
     if (!S.fix) S.st = 'wait';
