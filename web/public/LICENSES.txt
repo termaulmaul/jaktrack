@@ -1,0 +1,244 @@
+%APP_NAME%: data licences and third-party notices
+The page's About > "Data and credits" carries the same credits. The source code is MIT-licensed (LICENSE in the
+repository); this file is about the data and the third-party code the page uses.
+
+Contents
+  1. Public transportation data (Public Transportation Open Data Center)
+  2. Mini Tokyo 3D (MIT License)
+  3. Map data: OpenStreetMap (Open Database License 1.0)
+  4. Basemap tiles: OpenFreeMap / OpenMapTiles (or your own Protomaps tiles)
+  5. MapLibre GL JS (BSD 3-Clause License)
+  6. Map label font: Noto Sans (SIL Open Font License 1.1)
+  7. Ground heights: GSI elevation tiles (Geospatial Information Authority of Japan)
+
+
+==============================================================================
+1. Public transportation data
+==============================================================================
+
+本アプリケーションが利用する公共交通データは、公共交通オープンデータセンターにおいて提供されるものです。
+公共交通事業者により提供されたデータを元にしていますが、必ずしも正確・完全なものとは限りません。本アプリケーションの表示内容について、公共交通事業者への直接の問合せは行わないでください。
+本アプリケーションに関するお問い合わせは、以下のメールアドレスにお願いします。
+%CONTACT%
+
+The source of the public transportation data in this app, etc. is the Public Transportation Open Data Center.
+They are based on the data provided by the public transportation operators. The accuracy and integrity of the data are not guaranteed. Please do not contact the public transportation operators directly regarding the content of the app.
+For inquiries on the app, please contact the following e-mail address.
+%CONTACT%
+
+Public Transportation Open Data Center: https://www.odpt.org/  ·  terms: https://developer.odpt.org/terms
+
+The timetable data come from the Mini Tokyo 3D dataset (pinned snapshot; About shows its commit and the date it was
+obtained). Train positions on the map are calculated from these timetables. They are not reported by the trains,
+except that while live data is in use, a train whose delay is reported live is moved by that delay.
+
+
+Toei (Bureau of Transportation, Tokyo Metropolitan Government), CC BY 4.0:
+This app uses the following copyrighted material with modifications. Bureau of Transportation, Tokyo Metropolitan Government / Association for Open Data of Public Transportation, Train timetable, Station information and Route information of Bureau of Transportation, Tokyo Metropolitan Government, Creative Commons License Attribution 4.0 International (https://creativecommons.org/licenses/by/4.0/deed.en)
+このアプリは、以下の著作物を改変して利用しています。 東京都交通局・公共交通オープンデータ協議会、東京都交通局 列車時刻表・駅情報・路線系統情報、クリエイティブ・コモンズ・ライセンス　表示4.0国際（https://creativecommons.org/licenses/by/4.0/deed.ja）
+While live Toei data is in use (train locations and service status), the credit reads:
+This app uses the following copyrighted material with modifications. Bureau of Transportation, Tokyo Metropolitan Government / Association for Open Data of Public Transportation, Train timetable, Station information, Route information, Train location information and Train status information of Bureau of Transportation, Tokyo Metropolitan Government, Creative Commons License Attribution 4.0 International (https://creativecommons.org/licenses/by/4.0/deed.en)
+このアプリは、以下の著作物を改変して利用しています。 東京都交通局・公共交通オープンデータ協議会、東京都交通局 列車時刻表・駅情報・路線系統情報・列車ロケーション情報・運行情報、クリエイティブ・コモンズ・ライセンス　表示4.0国際（https://creativecommons.org/licenses/by/4.0/deed.ja）
+
+Toei Bus (Bureau of Transportation, Tokyo Metropolitan Government), CC BY 4.0: "Bus information" (バス関連情報, GTFS-JP:
+stops, routes, trips) and "Bus realtime information" (バス関連リアルタイム情報, GTFS-RT: bus positions), provided by
+東京都交通局・公共交通オープンデータ協議会 through the Public Transportation Open Data Center
+(https://ckan.odpt.org/dataset/b_bus_gtfs_jp-toei, https://ckan.odpt.org/dataset/b_bus_gtfs_rt-toei). Used when the
+bus data is built and live buses are on. Modified: stops, shapes and trips repacked for this app, route tags
+romanised, positions animated between reports.
+This app uses the following copyrighted material with modifications. Bureau of Transportation, Tokyo Metropolitan Government / Association for Open Data of Public Transportation, Bus information and Bus realtime information of Bureau of Transportation, Tokyo Metropolitan Government, Creative Commons License Attribution 4.0 International (https://creativecommons.org/licenses/by/4.0/deed.en)
+このアプリは、以下の著作物を改変して利用しています。 東京都交通局・公共交通オープンデータ協議会、東京都交通局 バス関連情報・バス関連リアルタイム情報、クリエイティブ・コモンズ・ライセンス　表示4.0国際（https://creativecommons.org/licenses/by/4.0/deed.ja）
+
+The data files this page loads exist only to draw this app. They are not open data and are not offered for reuse:
+the operators' data inside them stays under the terms of the Public Transportation Open Data Center
+(https://developer.odpt.org/terms). Please get the data from the Center itself.
+
+This app is not affiliated with any railway operator, the Public Transportation Open Data Center or Mini Tokyo 3D.
+
+
+==============================================================================
+2. Mini Tokyo 3D
+==============================================================================
+
+Lines, stations and timetables come from the dataset of Mini Tokyo 3D, and parts of this app's code are ported from
+Mini Tokyo 3D. https://github.com/nagix/mini-tokyo-3d
+
+The MIT License (MIT)
+
+Copyright (c) 2019-2026 Akihiko Kusanagi
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+
+
+==============================================================================
+3. Map data: OpenStreetMap
+==============================================================================
+
+Map data © OpenStreetMap contributors.
+Contains information from OpenStreetMap (https://www.openstreetmap.org), which is made available here under the
+Open Database License (ODbL) 1.0 (https://opendatacommons.org/licenses/odbl/1-0/).
+Copyright and licence: https://www.openstreetmap.org/copyright
+
+Data files built from OpenStreetMap (station numbering, line heights, tunnel alignments) are Derivative Databases under
+the same Open Database License 1.0. How they are made is in the project's data-build scripts.
+
+
+==============================================================================
+4. Basemap tiles
+==============================================================================
+
+By default the basemap tiles come from OpenFreeMap (https://openfreemap.org): "OpenFreeMap © OpenMapTiles Data from
+OpenStreetMap" (OpenMapTiles schema, https://www.openmaptiles.org/; data © OpenStreetMap contributors, ODbL).
+A self-hosted build may use Protomaps Basemap tiles instead (https://protomaps.com, https://github.com/protomaps/basemaps),
+built from OpenStreetMap data (a Produced Work under the ODbL, OpenStreetMap attribution required) with Natural Earth
+(public domain, https://www.naturalearthdata.com).
+
+
+==============================================================================
+5. MapLibre GL JS
+==============================================================================
+
+This app includes MapLibre GL JS 5.24.0 (https://maplibre.org). Its licence follows unchanged.
+
+Copyright (c) 2023, MapLibre contributors
+
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+    * Neither the name of MapLibre GL JS nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+-------------------------------------------------------------------------------
+
+Contains code from mapbox-gl-js v1.13 and earlier
+
+Version v1.13 of mapbox-gl-js and earlier are licensed under a BSD-3-Clause license
+
+Copyright (c) 2020, Mapbox
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice,
+  this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+* Neither the name of Mapbox GL JS nor the names of its contributors
+  may be used to endorse or promote products derived from this software
+  without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+-------------------------------------------------------------------------------
+
+Contains code from glfx.js
+
+Copyright (C) 2011 by Evan Wallace
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+--------------------------------------------------------------------------------
+
+Contains a portion of d3-color https://github.com/d3/d3-color
+
+Copyright 2010-2016 Mike Bostock
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+
+* Redistributions of source code must retain the above copyright notice, this
+  list of conditions and the following disclaimer.
+
+* Redistributions in binary form must reproduce the above copyright notice,
+  this list of conditions and the following disclaimer in the documentation
+  and/or other materials provided with the distribution.
+
+* Neither the name of the author nor the names of contributors may be used to
+  endorse or promote products derived from this software without specific prior
+  written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
+==============================================================================
+6. Map label font
+==============================================================================
+
+Map labels use glyphs generated from Noto Sans, © The Noto Project Authors (https://github.com/notofonts), licensed
+under the SIL Open Font License 1.1 (https://openfontlicense.org), served with the basemap tiles. Kana and kanji are
+drawn by the browser's own fonts.
+
+
+==============================================================================
+7. Ground heights: GSI elevation tiles
+==============================================================================
+
+Used only when the 3D depth data is built (npm run data:3d):
+出典：国土地理院（地理院タイル 標高タイル DEM5A・DEM5B・DEM10B）を加工して作成
+Ground heights: Geospatial Information Authority of Japan (GSI) elevation tiles, processed (DEM5A, DEM5B, DEM10B).
+Used for the tunnel depths of the underground view (rail level below the street). https://maps.gsi.go.jp/development/ichiran.html

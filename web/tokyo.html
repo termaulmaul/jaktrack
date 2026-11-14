@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>%APP_NAME% · kereta Jakarta menurut jadwal</title>
+<meta name="description" content="Setiap kereta di Jabodetabek pada posisi menurut jadwalnya saat ini: KRL, MRT, LRT, dan KA antarkota.">
+<meta name="robots" content="noindex, nofollow">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="apple-mobile-web-app-title" content="%APP_NAME%">
+<meta name="format-detection" content="telephone=no">
+<link rel="icon" href="/icon.svg?v=4" type="image/svg+xml">
+<link rel="icon" href="/favicon-32.png?v=4" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=4">
+<link rel="manifest" href="/tokyo.webmanifest" crossorigin="use-credentials">
+<link rel="preload" href="/data/tokyo/tt-latest.json" as="fetch" crossorigin>
+<link rel="preload" href="/data/tokyo/network-latest.json" as="fetch" crossorigin>
+<!--APP_HEAD-->
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs><symbol id="i-back" viewBox="0 0 512 512"><path d="M322 82Q322 82 322 82Q329 80 337 84Q345 87 349 94Q355 105 349 116Q348 119 283 184Q283 184 218 249L283 314Q348 379 349 382Q353 389 351 397Q350 406 342 412Q335 418 326 417Q319 416 309 407Q299 398 239 338Q178 277 169 267Q160 257 160 249Q160 241 168 232Q177 222 237 162Q309 89 314 86Q318 83 322 82Z"/></symbol><symbol id="i-chev" viewBox="0 0 512 512"><path d="M179 82Q179 82 179 82Q187 80 195 84Q198 85 273 160Q335 221 344 231Q352 241 352 249Q352 257 344 267Q335 277 273 338Q213 398 203 407Q193 416 186 417Q177 418 170 412Q162 406 161 397Q159 389 163 382Q164 379 229 314Q229 314 294 249L229 184Q164 119 163 116Q159 109 161 101Q163 85 179 82Z"/></symbol><symbol id="i-x" viewBox="0 0 512 512"><path d="M136 114Q136 114 136 114Q145 111 154 115Q157 117 207 166Q207 166 256 215L306 166Q347 124 354 118Q361 113 369 113Q375 114 378 115Q387 120 390 128Q394 138 390 147Q388 150 339 200Q339 200 290 249L339 298Q379 338 386 346Q392 353 392 360Q392 371 385 378Q378 385 367 385Q360 385 352 378Q345 372 305 332Q305 332 256 283L207 332Q167 372 160 378Q152 385 145 385Q134 385 127 378Q120 371 120 360Q120 353 126 346Q133 338 173 298Q173 298 222 249L173 200Q133 159 126 152Q120 145 120 137Q120 120 136 114Z"/></symbol><symbol id="i-xc" viewBox="0 0 512 512"><path d="M242 42Q312 37 370 75Q387 87 403 103Q453 152 463 225Q464 232 464 249Q464 266 463 273Q453 346 403 396Q353 446 280 456Q273 457 256 457Q239 457 232 456Q159 446 109 396Q59 346 50 274Q40 199 82 135Q110 94 152 70Q193 45 242 42ZM199 171Q199 171 199 171Q193 168 186 171Q180 173 178 179Q175 186 178 192Q179 195 206 222Q206 222 233 249L206 276Q179 303 178 306Q175 312 178 319Q180 325 186 327Q192 330 199 327Q201 327 228 299Q228 299 256 272L284 299Q306 322 312 326Q317 330 322 329Q330 328 334 321Q338 314 335 307Q334 304 306 277Q306 277 279 249L306 222Q333 195 334 192Q337 186 334 179Q332 173 326 171Q319 168 313 171Q310 172 283 199Q283 199 256 226L229 199Q202 172 199 171Z"/></symbol><symbol id="i-search" viewBox="0 0 512 512"><path d="M209 42Q250 39 285 53Q328 69 356 104Q385 138 394 182Q408 252 369 311L363 320L411 368Q449 407 456 414Q462 422 463 428Q464 437 458 446Q449 458 435 456Q429 455 422 448Q414 442 375 404L327 356L318 362Q287 383 248 389Q190 397 138 368Q86 339 63 285Q38 229 54 170Q69 117 112 81Q155 45 209 42ZM249 94Q249 94 249 94Q226 89 204 92Q162 99 133 130Q108 155 101 190Q95 215 100 239Q108 276 135 304Q161 330 199 338Q207 340 223 340Q239 340 247 338Q284 330 311 304Q337 277 345 241Q347 232 347 216Q347 199 345 190Q337 154 310 128Q284 101 249 94Z"/></symbol><symbol id="i-layers" viewBox="0 0 512 512"><path d="M246 42Q269 40 286 46Q292 48 369 83Q446 118 449 121Q464 131 464 146Q463 162 448 171Q443 173 418 185Q392 197 392 198Q392 198 419 210Q446 222 449 224Q471 239 462 260Q458 268 448 274Q445 277 420 288Q394 300 394 300Q394 301 421 314Q448 328 452 331Q470 346 462 364Q458 372 448 379Q446 380 373 414Q300 447 291 451Q261 463 229 453Q223 452 146 417Q69 382 64 379Q55 373 51 363Q46 353 50 342Q55 332 67 326Q72 323 96 312Q121 302 121 302Q121 301 118 300Q116 299 112 298Q108 296 103 293Q64 275 58 270Q53 265 51 260Q44 246 54 232Q60 225 94 210Q101 206 108 204Q114 201 118 199Q121 197 121 197Q121 197 97 186Q64 171 58 166Q50 159 49 150Q45 133 62 121Q67 118 144 82Q222 47 225 46Q234 43 246 42ZM270 74Q256 71 242 74Q237 76 162 110Q86 144 85 145Q85 145 90 148Q95 150 104 154Q113 158 123 163Q163 181 169 184Q229 212 237 214Q254 220 274 215Q281 213 340 185Q344 183 384 166Q423 148 426 146L428 145L423 143Q419 141 348 108Q276 76 270 74ZM164 217 160 215 123 232Q86 248 85 249L162 285Q173 290 203 304Q233 317 240 319Q256 323 272 319Q281 317 345 287Q351 284 389 267Q400 262 408 258Q417 254 422 252Q427 249 427 249Q426 248 390 232Q353 215 352 215Q351 215 321 229Q291 243 285 245Q255 254 226 244Q220 242 194 230Q168 219 164 217ZM391 335Q391 335 391 335Q355 318 354 318Q354 318 324 332Q293 346 286 348Q256 359 225 348Q218 346 190 332Q161 319 160 320Q159 320 122 336Q86 352 85 353Q85 353 120 370Q156 386 194 403Q231 420 236 422Q242 424 256 424Q270 424 275 423Q279 421 317 404Q355 387 391 370Q427 353 427 353Q426 352 391 335Z"/></symbol><symbol id="i-locate" viewBox="0 0 512 512"><path d="M246 27Q250 25 256 25Q273 25 278 41Q280 45 280 68V91L288 92Q334 101 369 136Q404 171 413 217L414 225H437Q457 225 462 226Q468 227 472 232Q482 241 480 254Q477 267 464 271Q460 273 437 273H414L413 281Q407 312 388 340Q368 368 341 385Q315 400 288 406L280 407V430Q280 453 278 457Q273 473 256 473Q239 473 234 457Q232 453 232 430V407L224 406Q217 404 206 401Q166 388 136 355Q107 322 99 281L98 273H75Q52 273 48 271Q35 267 32 254Q30 241 40 232Q44 227 50 226Q55 225 75 225H98L99 217Q105 190 120 165Q140 132 173 112Q197 97 224 92L232 91V68Q232 45 234 41Q237 32 246 27ZM268 122Q268 122 268 122Q208 116 165 160Q144 181 135 208Q118 258 141 304Q169 361 231 375Q256 380 281 375Q343 361 371 304Q394 258 377 208Q365 172 336 149Q306 126 268 122Z"/></symbol><symbol id="i-share" viewBox="0 0 512 512"><path d="M248 27Q256 22 265 28Q268 30 308 70Q349 111 350 114Q354 121 350 128Q346 136 338 137Q333 138 328 134Q323 130 300 107L272 80V198Q272 316 271 320Q267 330 256 330Q245 330 241 320Q240 316 240 198V80L212 107Q189 130 184 134Q179 138 174 137Q166 136 162 128Q158 121 162 114Q163 111 204 70Q245 29 248 27ZM128 170Q128 170 128 170Q134 169 157 169Q177 169 181 170Q185 171 189 176Q192 179 192 185Q192 191 189 194Q185 199 180 200Q176 201 155 201Q129 202 125 204Q118 208 114 216Q112 220 112 321Q112 321 112 423L114 427Q118 434 126 439Q126 439 129 441H256H383L386 439Q394 434 398 427Q398 427 400 423V321V219L397 214Q392 205 383 202Q380 201 356 201Q333 201 330 199Q326 197 323 194Q320 191 320 185Q320 179 323 176Q327 171 332 170Q336 169 359 169Q386 169 393 172Q419 180 429 206Q429 206 431 213L432 318Q432 406 432 420Q431 433 426 442Q415 464 390 471Q384 473 256 473Q128 473 122 471Q90 462 82 431Q80 425 80 321Q80 217 81 213Q85 196 98 184Q112 172 128 170Z"/></symbol><symbol id="i-clock" viewBox="0 0 512 512"><path d="M241 42Q256 41 269 42Q351 47 407 106Q452 154 462 221Q464 231 464 249Q464 267 462 277Q454 332 421 375Q405 398 382 414Q339 447 284 455Q274 457 256 457Q238 457 228 455Q173 447 130 414Q107 398 91 375Q58 332 50 277Q48 267 48 249Q48 231 50 221Q58 167 91 123Q107 101 130 84Q181 46 241 42ZM284 75Q278 74 262 74Q245 73 240 74Q212 77 193 85Q149 102 120 138Q90 174 82 222Q81 231 81 249Q81 267 82 276Q89 319 114 353Q139 387 178 407Q214 425 256 425Q298 425 334 407Q372 387 397 354Q422 320 430 277Q431 268 431 250Q431 231 430 222Q420 162 378 122Q338 85 284 75ZM252 106Q252 106 252 106Q258 104 264 107Q269 110 271 117Q272 120 272 184Q272 184 272 249H314Q355 249 359 251Q372 257 367 271Q364 279 355 281Q350 281 301 281Q301 281 252 281L248 279Q244 276 242 273Q242 273 240 270V195Q240 120 241 117Q243 108 252 106Z"/></symbol><symbol id="i-offline" viewBox="0 0 512 512"><path d="M62 41Q66 40 72 43Q74 44 268 238Q462 433 463 437Q466 446 460 452Q453 459 444 456Q440 455 246 261Q51 67 50 65Q46 58 49 51Q52 43 59 42Q61 41 62 41ZM243 57Q246 57 260 58Q275 58 280 59Q331 67 366 103Q400 138 412 192L414 202L422 204Q454 210 477 230Q500 249 508 275Q518 310 506 344Q499 361 485 376Q475 387 468 387Q461 387 456 382Q446 370 460 357Q480 337 480 305Q480 288 473 275Q456 239 405 234Q393 232 389 228Q385 224 383 212Q379 182 367 159Q338 101 277 91Q267 89 252 90Q224 91 201 103Q190 108 184 107Q178 105 174 98Q171 92 174 85Q176 80 186 74Q209 62 233 59Q240 58 243 57ZM85 162Q85 162 85 162Q91 160 94 160Q106 160 109 172Q111 178 107 184Q105 189 95 193Q40 213 33 266Q30 287 35 305Q39 321 48 334Q58 348 72 358Q89 369 112 375Q120 376 223 377Q223 377 326 377L329 380Q337 385 336 394Q335 403 327 407Q324 409 233 409Q124 410 106 406Q79 400 58 387Q-3 348 0 275Q2 232 29 200Q50 175 85 162Z"/></symbol><symbol id="i-warn" viewBox="0 0 512 512"><path d="M249 43Q282 39 298 68Q306 81 388 235Q471 389 472 392Q476 404 473 417Q467 445 440 453L434 455H256H78L72 453Q45 445 39 417Q36 404 40 392Q41 389 124 235Q206 81 214 68Q218 61 223 57Q234 45 249 43ZM257 75Q250 75 245 79Q244 81 162 234Q79 386 72 399Q69 406 71 413Q73 420 80 422Q82 423 256 423Q430 423 432 422Q438 420 440 414Q443 408 442 403Q441 401 359 248Q277 96 271 86Q268 80 265 78Q262 75 257 75ZM252 167Q259 166 267 170Q278 175 277 191Q277 202 274 258Q272 313 271 315Q270 320 264 324Q259 327 253 326Q245 325 242 318Q240 314 237 247Q234 188 235 184Q237 170 252 167ZM248 352Q248 352 248 352Q251 351 256 351Q264 351 270 356Q276 362 276 370Q276 377 271 383Q266 390 256 390Q246 390 241 383Q236 377 236 370Q236 358 248 352Z"/></symbol><symbol id="i-plus" viewBox="0 0 512 512"><path d="M248 92Q248 92 248 92Q253 88 260 90Q266 91 270 97Q270 97 272 100V166V233H338H404L408 235Q416 240 416 249Q416 258 408 263Q408 263 405 265H339H272V332V398L270 401Q265 409 256 409Q247 409 242 401Q242 401 240 398V332V265H173H107L104 263Q96 258 96 249Q96 240 103 236Q103 236 107 233H173H240V166V100L242 97Q244 94 248 92Z"/></symbol><symbol id="i-minus" viewBox="0 0 512 512"><path d="M108 233Q108 233 108 233Q111 233 257 233Q257 233 404 233L408 235Q416 240 416 249Q416 258 408 263Q408 263 405 265H256H107L104 263Q91 255 98 241Q101 235 108 233Z"/></symbol><symbol id="i-info" viewBox="0 0 512 512"><path d="M234 42Q254 40 275 43Q340 52 388 99Q436 146 446 211Q449 236 447 259Q440 338 380 391Q320 444 241 441Q219 440 198 435Q139 420 99 375Q59 330 50 269Q48 260 48 242Q48 225 49 217Q56 165 85 124Q114 84 160 62Q195 44 234 42ZM276 75Q268 74 252 74Q236 73 229 74Q171 81 129 122Q78 174 80 247Q82 284 98 317Q118 356 155 380Q192 405 236 409Q302 413 354 372Q405 330 414 264Q417 242 415 221Q408 165 370 125Q331 85 276 75ZM243 124Q258 122 267 132Q276 142 274 154Q271 166 259 172Q256 174 248 174Q240 174 236 172Q220 163 222 147Q223 138 229 132Q235 125 243 124ZM214 199Q214 199 214 199Q217 197 236 197Q255 197 258 199Q265 202 267 207Q268 210 268 264Q268 264 268 317H284Q303 317 308 323Q312 328 312 333Q312 338 308 343Q304 348 298 348Q291 349 252 349Q204 349 201 347Q193 343 192 334Q192 325 200 320Q200 320 203 317H219H236V273V229H228Q213 229 208 224Q203 218 204 210Q206 202 214 199Z"/></symbol></defs></svg>
+
+<div class="app tk-app" id="app" data-loading="" data-screen="home">
+  <header class="topbar" id="topbar">
+    <h1 class="tk-sr" data-i18n="brand">%APP_NAME%</h1>
+    <button type="button" class="round back" id="b-back" data-act="back" aria-label="Back" data-i18n-aria="back"><svg class="i"><use href="#i-back"/></svg></button>
+    <div class="segwrap">
+      <div class="seg" role="tablist" aria-label="View" data-i18n-aria="tabs" data-seg>
+        <button type="button" role="tab" data-tab="home" aria-selected="true" data-i18n="tab.map">Map</button>
+        <button type="button" role="tab" data-tab="lines" aria-selected="false" data-i18n="tab.lines">Lines</button>
+        <button type="button" role="tab" data-tab="stations" aria-selected="false" data-i18n="tab.stations">Stations</button>
+      </div>
+    </div>
+    <button type="button" class="round oyen" data-act="about" aria-label="About %APP_NAME%" data-i18n-aria="about.open"><img width="44" height="44" alt="" draggable="false"></button>
+  </header>
+
+  <div class="map" id="map"></div>
+
+  <div class="tk-tl" id="tk-tl"><button type="button" class="tk-sched" id="sched" data-act="sched" aria-label="Scheduled positions: what this means" data-i18n-aria="sched.aria"><span class="tk-pill"><i aria-hidden="true"></i><span data-i18n="sched">Scheduled</span></span></button></div>
+
+  <div class="ctrls" id="ctrls">
+    <div class="ccard" id="c3dcard">
+      <button type="button" class="c3d" id="b-3d" aria-pressed="false" aria-label="3D city" data-i18n-aria="3d.aria" hidden>3D</button>
+      <button type="button" class="c3d tk-ug" id="b-ug" aria-pressed="false" aria-label="Show the underground" data-i18n-aria="city3d.underground.aria" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18"/><path d="M5 13h14M7 17h10" opacity=".55"/></svg></button>
+      <button type="button" class="c3d tk-bus" id="b-bus" data-act="buses" aria-pressed="false" aria-label="Show live Toei buses" data-i18n-aria="bus.chip.aria" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3.5" width="14" height="14" rx="3"/><path d="M5 11h14M8.5 14.5h.01M15.5 14.5h.01M8 17.5V20M16 17.5V20"/></svg></button>
+      <button type="button" id="b-locate" aria-label="Stations near me" data-i18n-aria="locate"><svg class="i"><use href="#i-locate"/></svg></button>
+    </div>
+    <div class="ccard czoom">
+      <button type="button" id="b-zin" aria-label="Zoom in" data-i18n-aria="zoom.in"><svg class="i"><use href="#i-plus"/></svg></button>
+      <button type="button" id="b-zout" aria-label="Zoom out" data-i18n-aria="zoom.out"><svg class="i"><use href="#i-minus"/></svg></button>
+    </div>
+  </div>
+
+  <main class="pane" id="pane" aria-label="%APP_NAME%">
+    <div class="grab" id="grab" data-drag>
+      <i class="grabber" aria-hidden="true"></i>
+      <p class="credit"><span data-i18n="credit.na.short">Not affiliated with rail operators</span><span data-i18n="credit.osm">Map data © OpenStreetMap contributors</span></p>
+    </div>
+    <header class="phead">
+      <div class="ptitle"><h1 data-i18n="brand">%APP_NAME%</h1><button type="button" class="tk-badgebtn" data-act="sched" aria-label="Scheduled positions: what this means" data-i18n-aria="sched.aria"><span class="badge muted tk-badge"><i aria-hidden="true"></i><span data-i18n="sched">Scheduled</span></span></button></div>
+      <button type="button" class="round oyen" data-act="about" aria-label="About %APP_NAME%" data-i18n-aria="about.open"><img width="44" height="44" alt="" draggable="false"></button>
+    </header>
+    <div class="ptabs">
+      <div class="seg" role="tablist" aria-label="View" data-i18n-aria="tabs" data-seg>
+        <button type="button" role="tab" data-tab="home" aria-selected="true" data-i18n="tab.map">Map</button>
+        <button type="button" role="tab" data-tab="lines" aria-selected="false" data-i18n="tab.lines">Lines</button>
+        <button type="button" role="tab" data-tab="stations" aria-selected="false" data-i18n="tab.stations">Stations</button>
+      </div>
+    </div>
+    <div class="pbody" id="pbody">
+      <div class="tk-sbar">
+      <form class="search" id="search" role="search" autocomplete="off" data-drag>
+        <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+        <input id="q" type="search" placeholder="Search stations, lines or trains" data-i18n-ph="search.ph" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" aria-label="Search stations, lines or trains" data-i18n-aria="search.ph">
+        <button type="button" class="qx" id="qx" aria-label="Clear search" data-i18n-aria="search.clear" hidden><svg class="i" aria-hidden="true"><use href="#i-xc"/></svg></button>
+      </form>
+      <button type="button" class="tk-rbtn" id="b-route" data-act="route" aria-label="Plan a trip" data-i18n-aria="rt.open" hidden><svg class="i" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M8.4 6H15a3 3 0 0 1 0 6H9a3 3 0 0 0 0 6h6.6"/></svg></button>
+      </div>
+      <div class="views" id="view"></div>
+    </div>
+    <footer class="pfoot"><button type="button" class="credit" data-act="about" data-i18n="credit.foot">Timetable positions, live where marked · Map data © OpenStreetMap contributors · Not affiliated with any railway operator</button></footer>
+  </main>
+
+  <div class="loading" id="loading" role="status">
+    <div class="lcard">
+      <img class="lart" width="150" height="150" alt="" draggable="false">
+      <p class="lt" id="load-t" data-i18n="load.t">Waiting for the train</p>
+      <p class="ls" id="load-s" data-i18n="load.s">Getting the map and the Greater Jakarta timetable ready</p>
+      <div class="ltrack" id="load-track"><i id="load-bar"></i></div>
+      <button type="button" class="btn primary" id="load-retry" data-i18n="retry" hidden>Try again</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <p class="tk-sr" id="tk-say" role="status" aria-live="polite"></p>
+</div>
+<noscript><p class="nojs">%APP_NAME% needs JavaScript to show the map and the timetable.</p></noscript>
+</body>
+</html>

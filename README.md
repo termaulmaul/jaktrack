@@ -2,50 +2,56 @@
 
 Riset untuk pelacak transportasi umum Jakarta: bus TransJakarta, kereta (KRL, MRT, LRT), dan data pendukung seperti CCTV lalu lintas dan tinggi air sungai.
 
-> **Status: purwarupa awal.** Peta 2D yang menampilkan bus TransJakarta hasil **simulasi dari jadwal resmi**, bukan posisi asli.
-> Rancangannya mengikuti hasil mempelajari [trafik.live](https://trafik.live) dan kode terbuka [tokyo-rail-twin](https://github.com/lucacadalora/tokyo-rail-twin) (MIT) dari tim yang sama.
+> **Status: purwarupa.** Peta kereta Jabodetabek (KRL, MRT, LRT, KA antarkota) yang bergerak **menurut jadwal**, bukan posisi asli.
+> Halamannya adalah adaptasi [tokyo-rail-twin](https://github.com/lucacadalora/tokyo-rail-twin) (MIT) untuk Jakarta.
 
 ## Menjalankan
 
-Butuh [Bun](https://bun.sh) dan perintah `unzip`.
+Butuh [Bun](https://bun.sh).
 
 ```bash
-bun run data   # unduh GTFS resmi TransJakarta (2,5 MB), bangun web/data/jakarta.json
-bun run dev    # buka http://127.0.0.1:4777
-bun test       # uji modul simulasi
+bun install
+# simpan berkas data kereta trafik.live ke var/src/trafik/ (lihat "Data" di bawah)
+bun run data   # bangun var/static/tokyo/ dari berkas itu
+bun run dev    # buka http://127.0.0.1:4776
+bun test       # periksa berkas hasil bangun
+bun run build  # situs statis di web/dist
 ```
 
-Repo ini hanya berisi kode. Data dibangun di mesin sendiri dari sumber resminya dan tidak ikut di-commit.
+## Data
+
+Repo ini hanya berisi kode. Berkas data tidak ikut di-commit.
+
+- **Sumber:** berkas data kereta yang dimuat halaman `trafik.live/kereta` (`asset-krl-*.json`, 296 kB). Isinya jadwal KRL dari [Open-KRL](https://github.com/open-krl/pipeline) (CC BY 4.0), ditambah jadwal MRT, LRT, dan KA antarkota yang dihimpun trafik.live, serta geometri rel.
+- **Cara mengambil:** buka `https://trafik.live/kereta` di browser, lalu simpan berkas `asset-krl-*.json` dari tab Network ke `var/src/trafik/`. Server trafik.live menolak klien selain browser, jadi tidak ada skrip unduh.
+- **Batasan pakai:** `robots.txt` trafik.live melarang pengumpulan konten untuk membangun korpus atau dijual ulang. Berkas itu dipakai lokal sebagai masukan; jangan disebarkan ulang. Untuk jadwal KRL saja, Open-KRL menyediakan GTFS-nya langsung.
+- **Atribusi** tampil di halaman (About → Data dan kredit) dan wajib dipertahankan.
+
+`data-build/jakarta.mjs` mengubah berkas itu menjadi format yang dibaca halaman: 16 jalur, 207 stasiun, 2.622 perjalanan pada dua kalender (hari kerja dan akhir pekan).
 
 ## Cara kerja
 
 ```
-GTFS TransJakarta ─► data-build/build.mjs ─► web/data/jakarta.json ─► web/sim.js ─► MapLibre GL
-   (unduh sekali)      rute, bentuk jalur,       (1,9 MB, statis)      posisi tiap     (peta dasar
-                       waktu antar-halte,                              bus per detik    OpenFreeMap)
-                       headway
+asset-krl-*.json ─► data-build/jakarta.mjs ─► var/static/tokyo/ ─► web/ (MapLibre GL)
+ (trafik.live)        jalur, stasiun,            network-v1.json     peta 2D, kota 3D,
+                      jadwal per jam             tt-v1/<kalender>/   papan stasiun, pencarian
 ```
 
-- GTFS TransJakarta berbasis frekuensi: tiap pola perjalanan punya waktu tempuh antar-halte dan jarak antar-keberangkatan (headway), bukan jadwal per bus.
-- Simulator menganggap satu bus berangkat tiap headway, lalu menaruhnya di jalur sesuai waktu yang sudah berlalu.
-- Semua dihitung di browser. Tidak ada server selain penyaji berkas statis.
+- Browser menaruh tiap kereta di relnya menurut jadwal, setiap frame. Tidak ada server selain penyaji berkas statis.
+- Jalur yang bercabang dipecah menjadi beberapa jalur lurus (misalnya Bogor menjadi "Jakarta Kota–Bogor" dan "Nambo–Jakarta Kota"), karena halaman asalnya mengandaikan satu jalur = satu lintasan.
 
-## Keterbatasan yang diketahui
+## Yang belum disesuaikan
 
-- **Bukan posisi asli.** Tidak ada data GPS armada; kemacetan dan keterlambatan tidak tercermin.
-- **Jumlah bus terlalu tinggi.** Simulator membaca GTFS apa adanya dan menghasilkan ±5.700 bus pada Sabtu malam, sedangkan trafik.live menampilkan ±3.100 pada waktu yang sama. Banyak pola di GTFS dinyatakan beroperasi 00.00–23.59, sehingga bus tetap muncul dini hari. Cara trafik.live menyaringnya belum diketahui.
-- **Hanya bus.** Kereta, halte, pencarian, dan tampilan 3D belum ada.
-- **Kalender dinilai saat build.** Hari libur nasional tidak diperhitungkan (GTFS ini tidak punya `calendar_dates`).
+- **Sisa Tokyo di antarmuka:** kelompok operator "JR / Metro / Toei / Private", penjelasan jenis kereta Jepang di About, dan sebagian teks bahasa Jepang. Nama folder dan berkas internal masih `tokyo`.
+- **Hari libur nasional** belum dimasukkan; hanya Sabtu dan Minggu yang memakai jadwal akhir pekan. Jadwal KRL hari Sabtu memakai tangkapan hari Minggu (sumbernya tidak punya tangkapan Sabtu).
+- **Bawah tanah dan ketinggian rel** memakai perkiraan, bukan data OpenStreetMap. Pintu keluar stasiun, bus, dan data live tidak ada.
+- **Jalur yang berbagi rel digambar bertumpuk.**
+- **Uji bawaan tokyo-rail-twin dihapus** karena mengunci perilaku Tokyo (zona waktu JST, data Tokyo). Yang ada hanya uji berkas hasil bangun.
+- **Bus TransJakarta** dari purwarupa sebelumnya dilepas dulu; ada di riwayat git (`e2ae3e6`).
 
-## Isi repo
+## Lisensi dan asal kode
 
-| Berkas | Isi |
-|---|---|
-| [`KNOWLEDGE.md`](KNOWLEDGE.md) | Catatan lengkap: arsitektur, sumber data, format data, protokol live, dan catatan tiap halaman trafik.live |
-| `data-build/build.mjs` | Pembangun data: GTFS → `web/data/jakarta.json` |
-| `web/sim.js`, `web/sim.test.mjs` | Simulasi posisi bus dari jadwal, dan ujinya |
-| `web/index.html`, `web/app.js` | Halaman peta |
-| `README.md` | Ringkasan ini |
+Kode di `web/` diadaptasi dari tokyo-rail-twin (MIT), yang sebagian diadaptasi dari Mini Tokyo 3D karya Akihiko Kusanagi (MIT). Teks lisensi dan pemberitahuannya ada di `third_party/tokyo-rail-twin/` dan `web/public/LICENSES.txt`.
 
 ## Temuan utama
 
@@ -104,7 +110,7 @@ Rinciannya, termasuk bentuk tiap pesan dan endpoint, ada di [`KNOWLEDGE.md`](KNO
 | Deteksi dari CCTV | GPU kelas atas, izin pemilik kamera | Posisi nyata sebagian, hanya di titik yang ada kamera |
 | Feed resmi operator | Kerja sama dengan TransJakarta | Posisi nyata; belum diketahui tersedia atau tidak |
 
-Yang dipilih untuk purwarupa ini adalah baris pertama: simulasi dari jadwal.
+Yang dipilih untuk purwarupa ini adalah baris pertama: simulasi dari jadwal, dimulai dari kereta.
 
 ## Metode dan batasan riset
 
