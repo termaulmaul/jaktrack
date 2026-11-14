@@ -29,6 +29,7 @@
 //   net.highlightLine('JR-East.Yamanote');  net.highlightStation(i);  net.clear();  net.setLang('ja');
 import { BASE_LABEL_LAYERS, FONT, labelLang } from './style.js';
 import { laneAt, measure, pointAt } from './net.js';
+import { heuristicRanges } from '../layers/city3d/elevation.js';
 
 /** css px between the centres of neighbouring lanes, by zoom (linear in between). trains.js shifts trains the same. */
 export const LANE_PX = [[8, 0.9], [10, 1.4], [12, 2.1], [14, 3.0], [16, 4.1], [18, 5.4], [20, 6.6]];
@@ -272,7 +273,9 @@ export function addNetwork(map, net, opts = {}) {
       const cum = cums[i];
       if (!cum) return out;
       if (!l.length) l.length = cum[cum.length - 1];
-      const ranges = elevRanges(elev, l);
+      // without the heights file a line marked underground is dashed only around its underground stations (the same
+      // estimate the 3D view uses), not from end to end: MRT Jakarta is elevated from Lebak Bulus to ASEAN
+      const ranges = elevRanges(elev, l) || (l.underground ? { tun: heuristicRanges(net, i).map(([a, b]) => [a, b]), via: [] } : null);
       const lanes = [];
       for (const [a, b] of shownRanges(l)) lanes.push(...lanePieces(l, a, b));
       for (const [m0, m1, ln, cls] of classPieces(lanes, ranges, l.underground ? 1 : 0)) {

@@ -476,9 +476,11 @@ export async function mountCity3d(map, opts = {}) {
     let view;
     if (o.place?.center) view = { center: o.place.center, zoom: o.place.zoom ?? Math.max(UG_ZOOM, Math.min(17, z)), pitch: UG_PITCH, bearing: map.getBearing() };
     else if (o.preset && UG_PRESETS[o.preset]) view = UG_PRESETS[o.preset];
-    else if (z < UG_NEAR_Z) view = UG_PRESETS.otemachi;   // far out (the opening view): where the levels stack
+    // far out (the opening view), or no underground station in view (Jakarta: only MRT Senayan–Bundaran HI is underground,
+    // so most of the map would show an empty veil): fly to where there is something to see
+    else if (z < UG_NEAR_Z || !(net.stations || []).some((s) => s.underground && map.getBounds().contains([s.lng, s.lat]))) view = UG_PRESETS.otemachi;
     else view = { center: cam.center, zoom: Math.max(15, Math.min(17, z)), pitch: Math.max(UG_PITCH, Math.min(70, cam.pitch)), bearing: cam.bearing };
-    go(view, o.place?.center || view === UG_PRESETS[o.preset] || z < UG_NEAR_Z ? 2400 : 900);
+    go(view, o.place?.center || view === UG_PRESETS[o.preset] || view === UG_PRESETS.otemachi ? 2400 : 900);
     changed();
     return true;
   }

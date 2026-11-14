@@ -62,6 +62,10 @@ function route(net, a, b) {                              // Dijkstra sederhana; 
   return found;
 }
 const netOf = system => (system === 'kai' ? 'kai' : '');
+// Asumsi (pengetahuan umum, bukan dari berkas sumber): di Jabodetabek hanya MRT Lin Utara-Selatan yang punya ruas bawah
+// tanah, yaitu Senayan sampai Bundaran HI. Lebak Bulus–ASEAN layang; KRL, kedua LRT, dan KA antarkota tidak di bawah tanah.
+// Kedalaman tidak ada di sini: kode web memakai perkiraan bawaannya (DEPTH_M di web/src/layers/city3d/elevation.js).
+const UNDERGROUND = new Set(['MRT-SNY', 'MRT-IST', 'MRT-BNH', 'MRT-STB', 'MRT-DKA', 'MRT-BHI']);
 
 // ---- kereta: urutan simpul penuh + halte berhenti ----
 const skipped = [];
@@ -127,14 +131,14 @@ trunks.forEach((T, ti) => {
     if (!s || !stopped.has(i)) return;                  // hanya stasiun yang disinggahi kereta lintasan ini
     const rep = (used.get(n) || 0) + 1; used.set(n, rep);
     const si = stations.length;
-    stations.push([`${lineId}.${n}${rep > 1 ? `-${rep}` : ''}`, lines.length, s.name, s.name, s.lng, s.lat, -1, 0, null, -1, 0, 0, 0]);
+    stations.push([`${lineId}.${n}${rep > 1 ? `-${rep}` : ''}`, lines.length, s.name, s.name, s.lng, s.lat, -1, UNDERGROUND.has(n) ? 1 : 0, null, -1, 0, 0, 0]);
     if (!byStationId.has(n)) byStationId.set(n, []);
     byStationId.get(n).push(si);
     T.station.set(i, si); idx.push(si); chain.push(Math.round(at[i]));
   });
   const length = Math.round(at.at(-1));
   // shortcut: semua jalur digambar di garis tengah (offset 0), jadi jalur yang berbagi rel bertumpuk; hitung lajur bila perlu dipisah
-  lines.push([lineId, title, title, line.color, line.code || null, ops.indexOf(sys.op), sys.cars, 0, 0,
+  lines.push([lineId, title, title, line.color, line.code || null, ops.indexOf(sys.op), sys.cars, T.nodes.some(n => UNDERGROUND.has(n)) ? 1 : 0, 0,
     idx, encodePath(path), chain, length, 0, [0, 0, length, 0], 0, 1, 0, 0]);
 });
 // stasiun fisik yang sama di beberapa jalur menjadi satu kelompok (pindah jalur, satu papan stasiun)

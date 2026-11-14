@@ -40,10 +40,11 @@ Sudah dicoba di browser dan berjalan:
 - **Detail kereta**: semua pemberhentian, posisi sekarang, dan mode mengikuti kereta.
 - **Pencarian** stasiun, jalur, dan nomor kereta.
 - **Kota 3D** dengan titik terbang ke Manggarai, Sudirman, Gambir, dan Jakarta Kota.
+- **Bawah tanah** (tombol di kanan atas): terowongan MRT Senayan–Bundaran HI, kotak stasiunnya, dan kereta di dalamnya, termasuk "Ikut di terowongan" dari detail kereta MRT.
 - **Bahasa** Indonesia (bawaan) dan Inggris.
 - **Tata letak ponsel** dan desktop.
 
-Ada di kode bawaan tokyo-rail-twin tetapi **belum diuji dengan data Jakarta**: perencana rute, pemutaran ulang waktu, tampilan bawah tanah, terbang bebas, mode luring (service worker), dan "kereta di dekatku".
+Ada di kode bawaan tokyo-rail-twin tetapi **belum diuji dengan data Jakarta**: perencana rute, pemutaran ulang waktu, terbang bebas, mode luring (service worker), dan "kereta di dekatku".
 
 Tidak ada: posisi langsung, bus TransJakarta, pintu keluar stasiun, tarif.
 
@@ -154,7 +155,9 @@ Nama `tokyo` pada folder, berkas, dan jenis berkas data (`tokyo-network`) adalah
 - **Kereta 3D digambar di garis tengah rel**, jadi dua kereta yang berpapasan bertumpuk sesaat. Sumber datanya tidak memuat jalur ganda.
 - **Jalur bercabang tampil sebagai beberapa jalur**, dan jalur yang berbagi rel digambar bertumpuk.
 - **Hari libur nasional belum ada.** Hanya Sabtu dan Minggu yang memakai jadwal akhir pekan. Jadwal KRL hari Sabtu memakai tangkapan hari Minggu, karena sumbernya tidak punya tangkapan Sabtu.
-- **Ketinggian rel dan kedalaman terowongan** memakai perkiraan bawaan, bukan data OpenStreetMap.
+- **Ruas bawah tanah ditandai dengan tangan**, bukan dari sumber data: enam stasiun MRT dari Senayan sampai Bundaran HI (`UNDERGROUND` di `data-build/jakarta.mjs`).
+- **Kedalaman terowongan adalah perkiraan bawaan**: 18 m di semua stasiun, digambar 5× lebih dalam, dengan satu kotak terowongan mengikuti garis tengah rel. Kedalaman asli tiap stasiun, dua tabung terpisah, dan letak mulut terowongan di antara ASEAN dan Senayan tidak ada di data.
+- **Ruas layang digambar di permukaan tanah**: MRT Lebak Bulus–ASEAN dan kedua LRT belum punya data ketinggian.
 - **Stasiun bernama sama dengan id berbeda** (misalnya Dukuh Atas MRT dan LRT) belum digabung menjadi satu titik pindah.
 - **Daftar "Pilih stasiunmu"** memakai id yang bergantung pada urutan jalur hasil bangun, jadi bisa bergeser bila data berubah.
 - **Uji bawaan tokyo-rail-twin dihapus**, karena mengunci perilaku Tokyo (zona waktu JST, data Tokyo). Yang ada hanya uji berkas hasil bangun.

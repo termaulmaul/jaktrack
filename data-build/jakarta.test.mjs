@@ -40,3 +40,17 @@ test.skipIf(!built)('jadwal terbaca: waktu menaik dan kereta berjalan searah di 
   }
   expect(runs).toBeGreaterThan(1000);
 });
+
+// asumsi yang sama dengan UNDERGROUND di jakarta.mjs: hanya MRT ruas Senayan–Bundaran HI yang di bawah tanah
+test.skipIf(!built)('bawah tanah: hanya MRT, ruas Senayan sampai Bundaran HI', () => {
+  const net = unpackNet(json('network-v1.json'));
+  const ugLines = net.lines.filter(l => l.underground);
+  expect(ugLines.map(l => l.id.split('.')[0])).toEqual(['mrt']);
+  const names = si => net.stations[si].name.en;
+  const ug = net.stations.map((s, si) => si).filter(si => net.stations[si].underground);
+  expect(ug.map(names)).toEqual(['Senayan', 'Istora', 'Bendungan Hilir', 'Setiabudi', 'Dukuh Atas', 'Bundaran HI']);
+  expect(ug.every(si => net.lines[net.stations[si].line] === ugLines[0])).toBe(true);
+  // ruas layang (Lebak Bulus–ASEAN) tetap bukan bawah tanah
+  expect(ugLines[0].stations.filter(si => !net.stations[si].underground).map(names)).toEqual(
+    ['Lebak Bulus', 'Fatmawati', 'Cipete Raya', 'Haji Nawi', 'Blok A', 'Blok M', 'ASEAN']);
+});

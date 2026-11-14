@@ -13,13 +13,15 @@ export const PRESETS = {
  * opening view's one tap: Otemachi + Tokyo Station, where five subway levels and the JR tunnels cross). Zoomed so the
  * levels (drawn UG_EXAG x deeper) separate on a phone, tilted so the depth reads, turned to look along the crossings. */
 export const UG_PITCH = 62, UG_ZOOM = 15.6, UG_NEAR_Z = 13.5;
+// kunci tidak boleh sama dengan kunci PRESETS: controls.js mengambil nama chip dari i18n 'city3d.p.<kunci>'
+// (dulu chip Setiabudi, Bendungan Hilir, dan Senayan tertulis Manggarai, Sudirman, dan Jakarta Kota)
 export const UG_PRESETS = {
   otemachi: { center: [106.82306, -6.19185], zoom: 15.55, pitch: UG_PITCH, bearing: -28, title: { en: 'Bundaran HI', ja: 'Bundaran HI', id: 'Bundaran HI' } },
-  jimbocho: { center: [106.82283, -6.2008], zoom: 15.6, pitch: UG_PITCH, bearing: -20, title: { en: 'Dukuh Atas', ja: 'Dukuh Atas', id: 'Dukuh Atas' } },
-  shinjuku: { center: [106.82176, -6.20909], zoom: 15.6, pitch: UG_PITCH, bearing: -62, title: { en: 'Setiabudi', ja: 'Setiabudi', id: 'Setiabudi' } },
-  shibuya: { center: [106.818, -6.21506], zoom: 15.9, pitch: UG_PITCH, bearing: -38, title: { en: 'Bendungan Hilir', ja: 'Bendungan Hilir', id: 'Bendungan Hilir' } },
-  ueno: { center: [106.80866, -6.22244], zoom: 15.8, pitch: UG_PITCH, bearing: 20, title: { en: 'Istora', ja: 'Istora', id: 'Istora' } },
-  ikebukuro: { center: [106.80252, -6.22678], zoom: 15.8, pitch: UG_PITCH, bearing: 80, title: { en: 'Senayan', ja: 'Senayan', id: 'Senayan' } },
+  dukuhatas: { center: [106.82283, -6.2008], zoom: 15.6, pitch: UG_PITCH, bearing: -20, title: { en: 'Dukuh Atas', ja: 'Dukuh Atas', id: 'Dukuh Atas' } },
+  setiabudi: { center: [106.82176, -6.20909], zoom: 15.6, pitch: UG_PITCH, bearing: -62, title: { en: 'Setiabudi', ja: 'Setiabudi', id: 'Setiabudi' } },
+  benhil: { center: [106.818, -6.21506], zoom: 15.9, pitch: UG_PITCH, bearing: -38, title: { en: 'Bendungan Hilir', ja: 'Bendungan Hilir', id: 'Bendungan Hilir' } },
+  istora: { center: [106.80866, -6.22244], zoom: 15.8, pitch: UG_PITCH, bearing: 20, title: { en: 'Istora', ja: 'Istora', id: 'Istora' } },
+  senayan: { center: [106.80252, -6.22678], zoom: 15.8, pitch: UG_PITCH, bearing: 80, title: { en: 'Senayan', ja: 'Senayan', id: 'Senayan' } },
 };
 /** Copy for page.js's controls (EN / JA / ID). */
 export const TEXT = {
