@@ -18,6 +18,7 @@
 // about a pixel. Nothing is allocated per frame: typed-array instance buffers, looks and labels cached per run.
 import { createFrame, destination } from './model.js';
 import { laneAt } from './net.js';
+import { railsOf } from './rails.js';
 import { _dict as I18N } from './i18n.js';
 
 const D2R = Math.PI / 180;
@@ -543,6 +544,7 @@ export function createTrains(model, opts = {}) {
   const placed = { ms: 0, every: 0, count: 0, z: -1, W: 0, H: 0, dirty: true };
   let vis = new Uint8Array(2048), split = 0, liveIn = 0, liveOn = true, hidden = false; // liveOn: mark measured trains (ring + delay)
   let avoid = new Float32Array(64), avoidN = 0; // boxes (css px on the canvas) labels keep out of: the page's bars and sheet // per frame train: 0 out of view, 1 below ground, 2 above; cars below ground come first
+  let rails = null;   // jaktrack: the tracks side by side along each line and the running side (rails.js); null = no data
   let elev = null;    // per line index: Float64Array [from, to, ...] of its tunnels (m along the line), [] = none; null = no the heights build data
   // trains below ground: 'exact' (DEFAULT: small, opaque, the line's exact colour: ODPT guideline 4 wants official
   // line colours unmodified), 'full' (the underground view: full size), 'muted' (an option nobody uses: muted colour)
@@ -629,7 +631,10 @@ export function createTrains(model, opts = {}) {
     const dim = focus.line >= 0 && run.line !== focus.line;
     const live = liveOn && frame.live ? frame.live[i] === 1 : false;
     if (live) { liveIn++; ug = false; }   // live below ground: full strength, never the quiet subway look
-    const small = ug && smallUg, side = small ? k.side * k.ugHalf : k.side;
+    // jaktrack: beside its line only where there are two tracks, on the side trains keep (the heights pack's tracks and
+    // hand: right in Indonesia); on single track the train sits on its line. No data for the line: left, as before.
+    const two = rails?.has(li) ? Math.min(1, rails.half(li, s) / 1.5) * (rails.hand(li) > 0 ? -1 : 1) : 1;
+    const small = ug && smallUg, side = (small ? k.side * k.ugHalf : k.side) * two;
     const Lpx = k.len * L.scale * (small ? k.ugLen : 1), Lm = Lpx / pxPerM, nT = carsDrawn(L.cars, Lpx, k.half), carM = Lm / nT;
     const lat = lateral(laneOf(L, line, g, s), sgn, lane, side);
     const base = (dim ? FLAG.DIM : 0) | (live ? FLAG.LIVE : 0);
@@ -903,6 +908,7 @@ export function createTrains(model, opts = {}) {
     setLanePx(fn) { lanePx = typeof fn === 'function' ? fn : null; placed.dirty = true; wake(); },
     /** the heights build's elev-v1.json (parsed): trains turn muted exactly where a tunnel starts. null = station flags only. */
     setElevation(json) {
+      rails = json && json.tracks ? railsOf(model, json) : null;
       elev = null;
       if (json && json.lines && typeof json.lines === 'object') {
         elev = model.lines.map((line) => {

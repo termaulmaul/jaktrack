@@ -76,7 +76,7 @@ Tanpa langkah 1 dan 2, `bun run data` berhenti dengan pesan yang menyebut berkas
 
 Bila `var/src/osm/rail.json` ada, pembangun kereta juga menggeser tiap lintasan ke garis tengah rel OpenStreetMap (`data-build/snap.mjs`) dan mencetak selisihnya per jalur; tanpa berkas itu lintasan sumber dipakai apa adanya.
 
-Pembangun ketinggian membaca `var/src/osm/rail.json` (way rel OpenStreetMap se-Jabodetabek dengan tag `bridge`/`tunnel`/`layer`) dan menulis `elev-v1.json`: per jalur, ruas mana yang layang dan mana yang terowongan. Berkas OSM itu diunduh sekali dengan `bun data-build/elev.mjs --fetch` (satu kueri Overpass). Bila berkasnya tidak ada, pembangun mencetak "Ketinggian dilewati" dan berakhir dengan kode 0; tampilan 3D lalu hanya mengenal terowongan MRT dan semua ruas lain digambar di permukaan. Metode, sumber per jalur, dan batasannya: [docs/ELEVASI.md](docs/ELEVASI.md).
+Pembangun ketinggian juga menghitung jumlah rel sejajar per ruas dan mencatat sisi jalan kereta (kunci `tracks` dan `hand` di `elev-v1.json`; [docs/REL.md](docs/REL.md)), yang dipakai untuk menaruh kereta dua arah di relnya masing-masing. Pembangun ketinggian membaca `var/src/osm/rail.json` (way rel OpenStreetMap se-Jabodetabek dengan tag `bridge`/`tunnel`/`layer`) dan menulis `elev-v1.json`: per jalur, ruas mana yang layang dan mana yang terowongan. Berkas OSM itu diunduh sekali dengan `bun data-build/elev.mjs --fetch` (satu kueri Overpass). Bila berkasnya tidak ada, pembangun mencetak "Ketinggian dilewati" dan berakhir dengan kode 0; tampilan 3D lalu hanya mengenal terowongan MRT dan semua ruas lain digambar di permukaan. Metode, sumber per jalur, dan batasannya: [docs/ELEVASI.md](docs/ELEVASI.md).
 
 Pembangun bus mengunduh GTFS (2,5 MB) sekali dan menyimpannya di `var/tmp/gtfs/`; `bun data-build/bus.mjs --fetch` mengunduh ulang. Bila unduhan gagal, data kereta tetap terbangun, perintah berakhir dengan kode galat dan pesan yang menyebut sebabnya, dan halaman berjalan tanpa tombol bus. Pembangun bus memakai perintah `unzip` sistem (macOS/Linux).
 
@@ -213,6 +213,7 @@ asset-krl-*.json ─► data-build/jakarta.mjs ─► var/static/tokyo/ ─► w
 | `web/build.mjs`, `web/dev-server.mjs` | Bundel esbuild dan server dev |
 | `docs/media/` | Tangkapan layar README |
 | `docs/ELEVASI.md` | Riset ketinggian rel per jalur, dengan sumber |
+| `docs/REL.md` | Jumlah rel per ruas dan sisi jalan kereta, dengan sumber |
 | `docs/E2E.md` | Hasil uji end-to-end manual lewat browser |
 | `third_party/tokyo-rail-twin/` | Lisensi dan pemberitahuan kode asal |
 | `KNOWLEDGE.md` | Catatan riset trafik.live |
@@ -222,7 +223,7 @@ Nama `tokyo` pada folder, berkas, dan jenis berkas data (`tokyo-network`) adalah
 ## Yang belum disesuaikan
 
 - **Sisa Tokyo di antarmuka.** Penjelasan jenis kereta Jepang di halaman Tentang dan teks bahasa Jepang.
-- **Kereta 3D digambar di garis tengah rel**, jadi dua kereta yang berpapasan bertumpuk sesaat. Sumber datanya tidak memuat jalur ganda.
+- **Kereta dua arah berjalan di relnya masing-masing** di ruas jalur ganda (2D dan 3D), di sisi kanan arah jalannya; di rel tunggal tetap di satu garis. Jumlah rel dan sisi jalan dari OpenStreetMap dan Wikipedia ([docs/REL.md](docs/REL.md)). Di ruas tiga rel atau lebih, rel yang dipakai tiap jalur tidak diketahui; kereta ditaruh di sepasang rel terdekat.
 - **Jalur bercabang tampil sebagai beberapa jalur**, dan jalur yang berbagi rel digambar bertumpuk.
 - **Hari libur nasional belum ada.** Hanya Sabtu dan Minggu yang memakai jadwal akhir pekan. Jadwal KRL hari Sabtu memakai tangkapan hari Minggu, karena sumbernya tidak punya tangkapan Sabtu.
 - **Stasiun bawah tanah ditandai dengan tangan**: enam stasiun MRT dari Senayan sampai Bundaran HI (`UNDERGROUND` di `data-build/jakarta.mjs`). Tinggi rel per ruas kini dari tag OpenStreetMap, dan pembangunnya memeriksa silang kedua hal itu.

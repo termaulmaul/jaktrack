@@ -260,6 +260,7 @@ export async function mountCity3d(map, opts = {}) {
     S.elevSource = elev ? 'elev' : 'heuristic';
     S.profiles = makeProfiles(net, elev);
     S.overSt = null;
+    S.rails = elev && elev.tracks ? elev : null;   // jaktrack: the tracks side by side and the running side (rails.js)
     // real depths, sections and confidence (elev-v2) over elev-v1 where they exist
     S.real = null;
     const v2 = opts.elev2 !== undefined ? opts.elev2 : ELEV2_URL ? await fetch(ELEV2_URL).then((r) => (r.ok ? r.json() : null)).catch(() => null) : null;
@@ -286,7 +287,7 @@ export async function mountCity3d(map, opts = {}) {
     // the 3D trains and their labels, right above the decks
     S.labels = createLabels(map, { text: textOf, deco: decoOf, area: labelArea });
     // the page clock (a playback moves the 3D trains too); page.js passes now: NOW
-    S.trains = createTrains3d({ net, profiles: S.profiles, real: S.real, tracks: S.tracks, platforms: S.platforms, source: makeSource(net, sim, opts.runs || sim?.runs, lookOf), labels: S.labels, reduced: reduced(), now: typeof opts.now === 'function' ? opts.now : undefined });
+    S.trains = createTrains3d({ net, profiles: S.profiles, real: S.real, tracks: S.tracks, platforms: S.platforms, rails: S.rails, source: makeSource(net, sim, opts.runs || sim?.runs, lookOf), labels: S.labels, reduced: reduced(), now: typeof opts.now === 'function' ? opts.now : undefined });
     map.addLayer(S.trains.layer, given || trainsBefore(map, [TRAINS3D_ID]));
     S.built = true;
     if (S.selected != null) api.setSelected(S.selected);
@@ -308,7 +309,9 @@ export async function mountCity3d(map, opts = {}) {
       // a station dot goes only when every station it stands for is up (a hub's dot can stand for surface platforms too)
       const up = new Set(S.overSt || (S.overSt = overStations(net, S.profiles).stations));
       const hide = [...up].filter((si) => { const g = net.stations?.[si]?.group; return !(g >= 0) || (net.groups?.[g] || [si]).every((x) => up.has(x)); });
-      const extra = (id) => (VIA_LINES.includes(id) ? ['!=', ['get', 'via'], 1] : ['!', ['in', ['get', 's'], ['literal', hide]]]);
+      // the picked line: only its tunnel stretches stay on the 2D map (dashed); the rest is vehicles.js's ribbon, on the
+      // open train's own track
+      const extra = (id) => (id.startsWith('tk-pick') && VIA_LINES.includes(id) ? ['==', ['get', 'ug'], 1] : VIA_LINES.includes(id) ? ['!=', ['get', 'via'], 1] : ['!', ['in', ['get', 's'], ['literal', hide]]]);
       for (const id of [...VIA_LINES, ...VIA_DOTS]) {
         if (!map.getLayer(id)) continue;
         if (!(id in S.raisedWas)) S.raisedWas[id] = map.getFilter(id) ?? null;

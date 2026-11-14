@@ -32,6 +32,11 @@ const MIN_LEVEL_RUN = 250;  // m: perubahan `layer` lebih pendek dari ini = deta
 // sejak 25 September 2021; https://en.wikipedia.org/wiki/Manggarai_railway_station). Di sekitar titik ini jalur
 // berawalan itu memilih rel layang OSM terdekat walau ada rel permukaan yang lebih dekat.
 export const PREFER_UP = [{ prefix: 'krl.Bogor.', lng: 106.8498, lat: -6.21, r: 1200 }];
+// Sisi jalan kereta per sistem: 1 = kereta berjalan di rel KANAN menurut arah jalannya, -1 = kiri. Sumber tertulis:
+// Wikipedia "Double-track railway" ("In Indonesia, right-hand running for railways (including LRT and MRT systems)") dan
+// "Jakarta MRT" ("Trains run on the right to match Indonesian railways"). Untuk KRL, KA antarkota, dan kedua LRT cocok
+// dengan arah way OSM (railway:preferred_direction); MRT tidak bertag arah di OSM. Rinciannya di docs/REL.md.
+export const HAND = { mrt: 1, lrtj: 1, jbdb: 1, krl: 1, kai: 1 };
 export const KIND = { mrt: 'subway', lrtj: 'light_rail', jbdb: 'light_rail', krl: 'rail', kai: 'rail' };   // awalan id jalur -> railway=*
 
 /** Tingkat sebuah way: -1 terowongan, 0 permukaan, n >= 1 layang (nilai tag layer, minimal 1). */
@@ -43,7 +48,7 @@ export function levelOf(tags = {}) {
 }
 export const metres = (level) => (level < 0 ? H_TUNNEL : H_VIADUCT + H_LAYER * Math.max(0, level - 2));
 
-/** Indeks ruas rel OSM per jenis (railway=*) dalam meter lokal. near(kind, x, y) = ruas [x0, y0, x1, y1, tingkat] di sel
+/** Indeks ruas rel OSM per jenis (railway=*) dalam meter lokal. near(kind, x, y) = ruas [x0, y0, x1, y1, tingkat, arah, relUtama] di sel
  * (100 m) titik itu dan delapan sel di sekitarnya (ruas panjang bisa muncul lebih dari sekali). Rel kereta cepat dan rel langsir dibuang. */
 export function indexWays(ways) {
   const LAT0 = -6.4, KX = 111320 * Math.cos(LAT0 * Math.PI / 180), KY = 110574, CELL = 100;
@@ -53,9 +58,12 @@ export function indexWays(ways) {
     const t = w.tags || {}, g = w.geometry || [];
     if (!KIND_SET.has(t.railway) || t.highspeed === 'yes' || ['yard', 'siding', 'spur'].includes(t.service)) continue;
     const lv = levelOf(t);
+    // arah jalan way (railway:preferred_direction): 1 = searah urutan titiknya, -1 = berlawanan, 0 = dua arah / tidak ditandai
+    const pd = t['railway:preferred_direction'] === 'forward' ? 1 : t['railway:preferred_direction'] === 'backward' ? -1 : 0;
+    const main = t.service ? 0 : 1;                       // 0 = wesel silang / rel depo: bukan rel utama
     for (let i = 1; i < g.length; i++) {
       const [x0, y0] = xy(g[i - 1].lon, g[i - 1].lat), [x1, y1] = xy(g[i].lon, g[i].lat);
-      const seg = [x0, y0, x1, y1, lv];
+      const seg = [x0, y0, x1, y1, lv, pd, main];
       const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) / CELL));
       const seen = new Set();
       for (let k = 0; k <= n; k++) {
@@ -180,9 +188,21 @@ if (import.meta.main) {
   const osm = JSON.parse(readFileSync(OSM_FILE, 'utf8'));
   const net = unpackNet(JSON.parse(readFileSync(`${OUT}/network-v1.json`, 'utf8')));
   const { lines, len, report } = buildElev(net, osm.elements || []);
+  // jumlah rel sejajar dan sisi jalan per jalur (data-build/snap.mjs tracks): kereta dua arah di relnya masing-masing
+  const { snapper } = await import('./snap.mjs');
+  const S = snapper(osm.elements || []), tracks = {}, hand = {}, rel = [];
+  for (const l of net.lines) {
+    const sys = String(l.id).split('.')[0], kind = KIND[sys];
+    if (!kind || !(l.path?.length > 1)) continue;
+    const t = S.tracks(l.path, kind), votes = t.hand.right + t.hand.left;
+    // arah way OSM hanya dipakai sebagai pemeriksa: yang menentukan tabel HAND (bersumber tertulis)
+    const osmHand = votes >= 50 ? (t.hand.right >= 0.95 * votes ? 1 : t.hand.left >= 0.95 * votes ? -1 : 0) : 0;
+    tracks[l.id] = t.ranges; hand[l.id] = HAND[sys] ?? 0;
+    rel.push({ id: l.id, ranges: t.ranges, votes: t.hand, osmHand, hand: hand[l.id], unknown: t.unknown });
+  }
   const built = new Date().toISOString();
   const source = { name: 'OpenStreetMap', license: 'ODbL 1.0', url: 'https://www.openstreetmap.org/copyright', osmBase: osm.osm3s?.timestamp_osm_base || null, query: QUERY };
-  const text = JSON.stringify({ v: 'jaktrack-elev-1', built, source, metres: { viaduct: H_VIADUCT, perLayerAbove2: H_LAYER, tunnel: H_TUNNEL, note: 'perkiraan' }, lines, len });
+  const text = JSON.stringify({ v: 'jaktrack-elev-1', built, source, metres: { viaduct: H_VIADUCT, perLayerAbove2: H_LAYER, tunnel: H_TUNNEL, note: 'perkiraan' }, lines, len, tracks, hand });
   writeFileSync(`${OUT}/elev-v1.json`, text);
   writeFileSync(`${OUT}/elev-latest.json`, JSON.stringify({ v: 'jaktrack-elev-1', file: 'elev-v1.json', built, source }));
   const packs = JSON.parse(readFileSync(`${OUT}/packs.json`, 'utf8'));
@@ -210,5 +230,22 @@ if (import.meta.main) {
       const m = line.chain[i], under = r.runs.some(([a, b, v]) => v < 0 && m >= a && m <= b);
       if (under !== net.stations[si].underground) console.warn(`      PERIKSA: ${net.stations[si].name.en} ${under ? 'di terowongan menurut OSM, tetapi tidak ditandai bawah tanah' : 'ditandai bawah tanah, tetapi tidak di terowongan menurut OSM'}`);
     });
+  }
+  // jumlah rel per jalur (tabel per ruas antarstasiun: bun data-build/elev.mjs --rel, dipakai untuk docs/REL.md)
+  console.log('Rel sejajar per jalur (km) dan sisi jalan:');
+  const perRuas = process.argv.includes('--rel');
+  for (const r of rel) {
+    const line = net.lines.find((l) => l.id === r.id), km = {};
+    for (const [a, b, n] of r.ranges) { const k = n === 0 ? 'tidak diketahui' : n === 1 ? 'tunggal' : n === 2 ? 'ganda' : '3+'; km[k] = (km[k] || 0) + (b - a) / 1000; }
+    const f = (k) => (km[k] || 0).toFixed(1).padStart(5);
+    console.log(`  ${r.id.padEnd(22)} tunggal ${f('tunggal')}  ganda ${f('ganda')}  3+ ${f('3+')}  tidak diketahui ${f('tidak diketahui')}  | jalan ${r.hand > 0 ? 'kanan' : r.hand < 0 ? 'kiri' : '?'}; way OSM berarah: kanan ${r.votes.right}, kiri ${r.votes.left}${r.osmHand && r.osmHand !== r.hand ? '  PERIKSA: arah way OSM berlawanan dengan tabel HAND' : ''}`);
+    if (!perRuas) continue;
+    const st = line.stations.map((si, i) => [line.chain[i], net.stations[si].name.en]).sort((a, b) => a[0] - b[0]);
+    for (let i = 1; i < st.length; i++) {
+      const by = {};
+      for (const [a, b, n] of r.ranges) { const o = Math.min(b, st[i][0]) - Math.max(a, st[i - 1][0]); if (o > 0) by[n] = (by[n] || 0) + o; }
+      const tot = Object.values(by).reduce((x, y) => x + y, 0) || 1, top = Object.entries(by).sort((a, b) => b[1] - a[1]);
+      console.log(`    | \`${r.id}\` | ${st[i - 1][1]} – ${st[i][1]} | ${((st[i][0] - st[i - 1][0]) / 1000).toFixed(1)} | ${top.map(([n, m]) => `${n} rel ${Math.round(100 * m / tot)}%`).join(', ')} |`);
+    }
   }
 }

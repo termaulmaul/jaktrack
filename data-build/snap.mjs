@@ -9,7 +9,10 @@
 // Karena hanya menyamping, urutan dan jarak antarstasiun praktis tidak berubah. Data OSM: ODbL (lihat docs/ELEVASI.md).
 import { indexWays } from './elev.mjs';
 
-const STEP = 20, R_SNAP = 60, COS_MIN = 0.85, TWIN_MIN = 2, TWIN_MAX = 7, GAP_FILL = 200, MEDIAN = 5, SIMPLIFY = 0.5, R_MEASURE = 100, SLOPE = 0.12;
+const STEP = 20, R_SNAP = 60, COS_MIN = 0.85, TWIN_MIN = 2, TWIN_MAX = 7, TWIN_MAX_SUBWAY = 16,   // dua tabung terowongan MRT berjarak lebih dari 7 m
+   GAP_FILL = 200, MEDIAN = 5, SIMPLIFY = 0.5, R_MEASURE = 100, SLOPE = 0.12;
+// rel sejajar: dicari sampai 16 m ke samping; median 11 titik (220 m); setengah jarak antar-rel 1,5-8 m; ruas < 300 m diabaikan
+const TRACKS_R = 16, TRACKS_MEDIAN = 11, TRACKS_MAX = 8, TRACKS_HALF_MIN = 1.5, TRACKS_MIN_RUN = 300;
 
 /** Buang titik yang segaris (Douglas-Peucker, tanpa rekursi). pts = [[x, y]] dalam meter. */
 function simplify(pts, tol) {
@@ -41,15 +44,16 @@ export function snapper(ways) {
     }
     return { out, total };
   };
-  // rel searah di sekitar titik: [geser menyamping bertanda (m, + = kiri arah lintasan), jarak, tingkat]
+  // rel searah di sekitar titik: [geser menyamping bertanda (m, + = kiri arah lintasan), jarak, tingkat,
+  //   arah jalan relatif terhadap lintasan (1 searah, -1 berlawanan, 0 tidak ditandai), rel utama (1) atau wesel/depo (0)]
   const around = (kind, [x, y, ux, uy], r) => {
     const out = [];
-    for (const [x0, y0, x1, y1, lv] of near(kind, x, y)) {
-      const dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy || 1;
-      if (Math.abs(dx * ux + dy * uy) / Math.sqrt(l2) < COS_MIN) continue;
+    for (const [x0, y0, x1, y1, lv, pd, main] of near(kind, x, y)) {
+      const dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy || 1, dot = dx * ux + dy * uy;
+      if (Math.abs(dot) / Math.sqrt(l2) < COS_MIN) continue;
       const f = Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / l2));
       const qx = x0 + dx * f - x, qy = y0 + dy * f - y, d = Math.hypot(qx, qy);
-      if (d <= r) out.push([qx * -uy + qy * ux, d, lv]);
+      if (d <= r) out.push([qx * -uy + qy * ux, d, lv, pd * Math.sign(dot), main]);
     }
     return out;
   };
@@ -63,13 +67,14 @@ export function snapper(ways) {
     const { out: S, total } = sample(points), step = total / (S.length - 1 || 1);
     const Z = zones.map(([lng, lat, r]) => [...xy(lng, lat), r]);
     const shift = S.map((p) => {
-      let c = around(kind, p, R_SNAP + TWIN_MAX);
+      const twinMax = kind === 'subway' ? TWIN_MAX_SUBWAY : TWIN_MAX;
+      let c = around(kind, p, R_SNAP + twinMax);
       if (Z.some(([zx, zy, r]) => Math.hypot(p[0] - zx, p[1] - zy) <= r) && c.some((x) => x[2] > 0)) c = c.filter((x) => x[2] > 0);
       let o0 = null;
       for (const [o, d] of c) if (d <= R_SNAP && (o0 === null || Math.abs(o) < Math.abs(o0))) o0 = o;
       if (o0 === null) return null;
       let mid = o0, twin = false;                      // kembaran: rel 2-7 m di sebelahnya; pilih yang tengahnya paling dekat ke lintasan
-      for (const [o] of c) { const gap = Math.abs(o - o0); if (gap >= TWIN_MIN && gap <= TWIN_MAX && (!twin || Math.abs((o0 + o) / 2) < Math.abs(mid))) { mid = (o0 + o) / 2; twin = true; } }
+      for (const [o] of c) { const gap = Math.abs(o - o0); if (gap >= TWIN_MIN && gap <= twinMax && (!twin || Math.abs((o0 + o) / 2) < Math.abs(mid))) { mid = (o0 + o) / 2; twin = true; } }
       return mid;
     });
     // titik tanpa rel OSM: celah pendek mengikuti tetangganya (interpolasi), celah panjang tetap di tempat (0)
@@ -102,5 +107,45 @@ export function snapper(ways) {
     }
     return { mean: n ? sum / n : null, max: n ? max : null, unmatched: 1 - n / S.length };
   }
-  return { snap, offset };
+  /**
+   * Rel utama yang sejajar di sepanjang lintasan (yang sudah diselaraskan): jumlahnya, letak rel kiri dan rel kanan
+   * terhadap lintasan, dan di rel mana kereta berjalan. Hasil:
+   * { ranges: [[dariM, sampaiM, jumlahRel, setengahM]], hand: { right, left }, unknown: meter tanpa rel OSM }.
+   *   jumlahRel 0 = tidak ada rel OSM (tidak bisa ditentukan); setengahM = setengah jarak antara rel terdekat di kiri
+   *   dan di kanan lintasan (lintasan = garis tengah keduanya), dibulatkan 0,5 m; 0 di rel tunggal.
+   *   hand = suara dari way bertanda railway:preferred_direction: right = way di kanan arah jalannya sendiri (jalan
+   *   kanan), left = di kiri. Dihitung hanya di titik dengan tepat dua rel.
+   */
+  function tracks(points, kind) {
+    const { out: S, total } = sample(points), step = total / (S.length - 1 || 1);
+    const hand = { right: 0, left: 0 };
+    const raw = S.map((p) => {
+      const c = around(kind, p, TRACKS_R).filter((x) => x[4]).sort((a, b) => a[0] - b[0]);
+      const cl = [];                                     // rel = kelompok geseran yang berdekatan: [geser, arah]
+      for (const [o, , , dir] of c) { const q = cl.at(-1); if (q && o - q[1] < 1.5) { q[1] = o; q[2] ||= dir; q[3]++; q[0] += (o - q[0]) / q[3]; } else cl.push([o, o, dir, 1]); }
+      if (!cl.length) return [0, 0, 0];
+      const L = cl.filter((q) => q[0] > 0.8).sort((a, b) => a[0] - b[0])[0], R = cl.filter((q) => q[0] < -0.8).sort((a, b) => b[0] - a[0])[0], mid = cl.find((q) => Math.abs(q[0]) <= 0.8);
+      if (cl.length === 2) for (const q of cl) if (q[2]) { const side = q[0] > (cl[0] === q ? cl[1][0] : cl[0][0]) ? 1 : -1; hand[side * q[2] < 0 ? 'right' : 'left']++; }
+      return cl.length < 2 ? [1, 0, 0] : [cl.length, L ? L[0] : mid ? mid[0] : 0, R ? R[0] : mid ? mid[0] : 0];
+    });
+    // haluskan: rel tambahan sebentar (wesel, sepur simpang pendek) tidak dihitung
+    const h = TRACKS_MEDIAN >> 1, med = (k) => raw.map((_, i) => { const w = raw.slice(Math.max(0, i - h), i + h + 1).map((r) => r[k]).sort((a, b) => a - b); return w[w.length >> 1]; });
+    const N = med(0), Lf = med(1), Rt = med(2);
+    // jumlah rel yang hanya sebentar (< TRACKS_MIN_RUN) di antara dua ruas yang sama mengikuti tetangganya
+    for (let i = 0; i < N.length;) {
+      let e = i; while (e < N.length && N[e] === N[i]) e++;
+      if (i > 0 && e < N.length && N[i - 1] === N[e] && (e - i) * step < TRACKS_MIN_RUN) for (let k = i; k < e; k++) { N[k] = N[e]; Lf[k] = Lf[i - 1]; Rt[k] = Rt[i - 1]; }
+      i = e;
+    }
+    const ranges = [];
+    let unknown = 0;
+    for (let i = 0; i < S.length; i++) {
+      const n = N[i], half = n >= 2 ? Math.max(TRACKS_HALF_MIN, Math.min(TRACKS_MAX, Math.round(Lf[i] - Rt[i]) / 2)) : 0;
+      const a = Math.max(0, (i - 0.5) * step), b = Math.min(total, (i + 0.5) * step), q = ranges.at(-1);
+      if (!n) unknown += b - a;
+      if (q && q[2] === n && q[3] === half) q[1] = b; else ranges.push([a, b, n, half]);
+    }
+    return { ranges: ranges.map(([a, b, n, half]) => [Math.round(a), Math.round(b), n, half]), hand, unknown: Math.round(unknown) };
+  }
+  return { snap, offset, tracks };
 }

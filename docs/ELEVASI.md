@@ -119,7 +119,7 @@ Selisih lintasan terhadap rel OSM sejenis terdekat yang searah, dalam meter (kel
 | `krl.Tanjung-Priok.6` | 0,8 | 4,7 | 1,6 | 3,2 | 0 m |
 | `krl.Cikarang.7` | 0,3 | 2,4 | 1,7 | 5,1 | 0 m |
 | `krl.Cikarang.8` | 0,5 | 3,4 | 1,7 | 3,7 | 0 m |
-| `mrt.MRT.9` | 0,2 | 0,6 | 1,4 | 3,0 | 0 m |
+| `mrt.MRT.9` | 0,2 | 0,6 | 3,3 | 8,0 | 0 m |
 | `lrtj.LRTJ.10` | 0,3 | 8,3 | 2,0 | 7,9 | 0 m |
 | `jbdb.Cibubur.11` | 0,2 | 0,7 | 1,9 | 3,0 | 0 m |
 | `jbdb.Bekasi.12` | 0,2 | 0,7 | 1,9 | 3,2 | 0 m |
@@ -130,8 +130,8 @@ Selisih lintasan terhadap rel OSM sejenis terdekat yang searah, dalam meter (kel
 Yang dibiarkan:
 
 - **Sembilan lekukan pendek (10–20 m) warisan lintasan sumber**, tempat lintasan pindah rel dalam satu langkah: dekat Jakarta Kota (Lin Bogor), satu di Lin Rangkasbitung sekitar 106,5188; −6,3549 (asal angka 57,1 m di tabel: di lekukan itu arah lintasan melintang sehingga rel "searah" terdekat adalah rel lain), dua di Lin Tangerang sekitar 106,6648; −6,1720, dan dua di Lin Cikarang (106,9232; −6,2155 dan 106,9707; −6,2213). Angka 13,0 m di `krl.Tangerang.5` sejenis. Tidak diperbaiki satu per satu.
-- **Satu garis untuk dua arah.** Kereta kedua arah tetap berjalan di garis tengah, bukan di relnya masing-masing.
-- **Terowongan** mengikuti garis tengah yang sama; berkas opsional `tunnels-v1.json` milik kode asal (trase per rel di terowongan) tidak dibangun, karena hanya memengaruhi mode Bawah tanah dan lintasan kita di sana sudah berada dalam 3 m dari rel OSM.
+- **Satu garis untuk dua arah.** Garis jalur tetap satu, di tengah. Kereta kedua arah kini berjalan di relnya masing-masing di kiri-kanan garis itu ([REL.md](REL.md)).
+- **Terowongan** mengikuti garis tengah yang sama. Sejak pemisahan dua arah ([REL.md](REL.md)), lintasan MRT di terowongan berada di tengah-tengah kedua tabung OSM (terpisah 10–16 m), sehingga jaraknya ke rel terdekat menjadi 5–8 m (angka MRT di tabel). Berkas opsional `tunnels-v1.json` milik kode asal (trase per rel di terowongan) tidak dibangun; tabung digambar dengan jarak bawaan kode di kiri-kanan garis tengah itu.
 - **Tinggi dek tetap perkiraan** (bagian "Angka meter"); bila angka aslinya berbeda, dek tetap berimpit dari atas tetapi tingginya salah.
 - Overpass tidak dipanggil lagi; semuanya memakai `var/src/osm/rail.json` yang sama. `network-v1.json` kini juga turunan OSM (ODbL) dan mencatatnya di `meta.source.alignment`; berkas itu tetap hanya di `var/`.
 
