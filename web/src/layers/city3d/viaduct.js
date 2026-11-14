@@ -60,7 +60,10 @@ export function viaductData(net, profs, opts = {}) {
   const minH = opts.minH ?? MIN_H, piece = opts.piece ?? PIECE_M, every = opts.every ?? COL_M;
   const bounds = opts.bounds === undefined ? BOUNDS : opts.bounds;
   const feats = [];
-  const decks = grid(12), cols = grid(12);
+  const cols = grid(12);
+  // jaktrack: opts.bands = [{ z0, z1, half(lineIdx, chainM) -> m }]: one set of decks per zoom range, as wide as the two
+  // tracks and their (widened) trains need there; none = the one fixed width at every zoom
+  const bands = (opts.bands?.length ? opts.bands : [{ z0: 0, z1: 99, half: null }]).map((b) => ({ ...b, grid: grid(12) }));
   const P = [0, 0, 1, 0], Q = [0, 0, 1, 0];
   let nd = 0, nc = 0, skipped = 0;
   const lines = Array.isArray(net?.lines) ? net.lines : [];
@@ -70,15 +73,18 @@ export function viaductData(net, profs, opts = {}) {
     const line = lines[i];
     const t = trackOf(line);
     if (t.n < 2) continue;
-    const half = (ELEVATED.has(line.id) ? GUIDE_W : DECK_W) / 2;
+    const baseHalf = (ELEVATED.has(line.id) ? GUIDE_W : DECK_W) / 2;
     const jitter = (i % 4) * 0.06;
     const k = t.k || 1;   // profile metres are chain metres; track metres = chain * k
     // decks: pieces that grow while the height stays within MERGE_DH of where they started (a level stretch is one long
     // piece, a ramp many short ones), never longer than PIECE_MAX
+    for (const band of bands) {
+    const decks = band.grid;
     let m0 = -1, h0 = 0, hs = 0, ns = 0;
     const emit = (a, b) => {
       const mid = (a + b) / 2;
       const h = hs / ns;
+      const half = band.half ? Math.max(baseHalf, band.half(i, mid / k)) : baseHalf;
       pointAt(t, mid, P);
       const [lng, lat] = toLngLat(P[0], P[1]);
       if (!inB(bounds, lng, lat)) return;
@@ -106,7 +112,7 @@ export function viaductData(net, profs, opts = {}) {
       const ring = [...left, ...right.reverse()];
       ring.push(ring[0]);
       const top = Math.round((h + jitter) * 100) / 100;
-      feats.push({ type: 'Feature', properties: { k: 'd', b: Math.max(0, Math.round((top - DECK_T) * 100) / 100), h: top }, geometry: { type: 'Polygon', coordinates: [ring] } });
+      feats.push({ type: 'Feature', properties: { k: 'd', b: Math.max(0, Math.round((top - DECK_T) * 100) / 100), h: top, z0: band.z0, z1: band.z1 }, geometry: { type: 'Polygon', coordinates: [ring] } });
       nd++;
     };
     for (let m = 0; m < t.length; m += piece) {
@@ -118,6 +124,7 @@ export function viaductData(net, profs, opts = {}) {
       if (up) { hs += h; ns++; }
     }
     if (m0 >= 0) emit(m0, t.length);
+    }
     // columns
     const cw = (ELEVATED.has(line.id) ? 1.8 : COL_W) / 2;
     for (let m = every / 2; m < t.length; m += every) {
@@ -149,7 +156,7 @@ const paint = (color) => ({
   'fill-extrusion-vertical-gradient': true,
 });
 export const LAYERS = [
-  { id: DECK_ID, type: 'fill-extrusion', source: VIADUCT_SOURCE, minzoom: 12, filter: ['==', ['get', 'k'], 'd'], paint: paint(VIADUCT_GREY.deck) },
+  { id: DECK_ID, type: 'fill-extrusion', source: VIADUCT_SOURCE, minzoom: 12, filter: ['all', ['==', ['get', 'k'], 'd'], ['>=', ['zoom'], ['get', 'z0']], ['<', ['zoom'], ['get', 'z1']]], paint: paint(VIADUCT_GREY.deck) },
   { id: COLS_ID, type: 'fill-extrusion', source: VIADUCT_SOURCE, minzoom: 14, filter: ['==', ['get', 'k'], 'c'], paint: paint(VIADUCT_GREY.cols) },
 ];
 

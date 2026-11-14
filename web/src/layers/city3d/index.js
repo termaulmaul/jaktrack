@@ -43,7 +43,8 @@
 import { profiles as makeProfiles, ELEV_URL } from './elevation.js';
 import { viaductData, addViaduct, showViaduct, removeViaduct, VIADUCT_IDS } from './viaduct.js';
 import { buildingSpec, addBuildings, showBuildings, removeBuildings, BLD_ID } from './buildings.js';
-import { createTrains3d, overStations, TRAINS3D_ID } from './vehicles.js';
+import { createTrains3d, overStations, kwAtZoom, wideOf, CAR_W, TRAINS3D_ID } from './vehicles.js';
+import { railsOf } from '../../tokyo/rails.js';
 import { carSpec } from './trainset.js';   // the Behind eye per line (its cars' height / pantograph)
 import { UG_MIN_Z } from './underground.js';
 import { patchProfiles, localTracks, localPlatforms } from './real.js';
@@ -311,7 +312,8 @@ export async function mountCity3d(map, opts = {}) {
       const hide = [...up].filter((si) => { const g = net.stations?.[si]?.group; return !(g >= 0) || (net.groups?.[g] || [si]).every((x) => up.has(x)); });
       // the picked line: only its tunnel stretches stay on the 2D map (dashed); the rest is vehicles.js's ribbon, on the
       // open train's own track
-      const extra = (id) => (id.startsWith('tk-pick') && VIA_LINES.includes(id) ? ['==', ['get', 'ug'], 1] : VIA_LINES.includes(id) ? ['!=', ['get', 'via'], 1] : ['!', ['in', ['get', 's'], ['literal', hide]]]);
+      // with the tracks drawn in 3D (S.rails), the 2D map's own line leaves the ground everywhere but in the tunnels
+      const extra = (id) => (id.startsWith('tk-pick') && VIA_LINES.includes(id) ? ['==', ['get', 'ug'], 1] : id === 'tk-rest' && S.rails ? ['==', ['get', 'ug'], 1] : VIA_LINES.includes(id) ? ['!=', ['get', 'via'], 1] : ['!', ['in', ['get', 's'], ['literal', hide]]]);
       for (const id of [...VIA_LINES, ...VIA_DOTS]) {
         if (!map.getLayer(id)) continue;
         if (!(id in S.raisedWas)) S.raisedWas[id] = map.getFilter(id) ?? null;
@@ -324,7 +326,17 @@ export async function mountCity3d(map, opts = {}) {
   function showCity(on) {
     if (on && S.built && !S.viaOnMap) {
       try {
-        S.viaduct = S.viaduct || viaductData(net, S.profiles, { bounds: opts.bounds });
+        // jaktrack: the deck carries both tracks and their trains: below z17.5 the trains (and their track spacing) are
+        // drawn wider than life, so the deck widens with them, one set of decks per half zoom level
+        let bands = null;
+        if (S.rails) {
+          const R = railsOf(net, S.rails);
+          bands = [[0, Z_2D], [Z_2D, 15], [15, 15.5], [15.5, 16], [16, 16.5], [16.5, 17], [17, 17.5], [17.5, 99]].map(([z0, z1], n) => {
+            const kw = n === 0 ? 1 : kwAtZoom(z0), wk = wideOf(kw);
+            return { z0, z1, half: (i, m) => R.half(i, m) * wk + CAR_W * kw / 2 + 0.8 };
+          });
+        }
+        S.viaduct = S.viaduct || viaductData(net, S.profiles, { bounds: opts.bounds, bands });
         addViaduct(map, S.viaduct, { before: map.getLayer(TRAINS3D_ID) ? TRAINS3D_ID : trainsBefore(map) });
         S.viaOnMap = true;
       } catch (e) { console.warn('[city3d] viaducts', e); }

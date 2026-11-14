@@ -128,3 +128,29 @@ Yang menghalangi lokasi sebelumnya:
 Lokasi tetap tidak disimpan dan tidak dikirim ke mana pun; yang disimpan hanya tanda `tokyo.nearby=1` (pengguna pernah menyalakan "Kereta di dekatku"), perilaku yang sudah ada. Tidak ada geolokasi di kode bus; halte terdekat tidak memakai lokasi pengguna.
 
 Tidak diuji: izin lokasi yang ditolak pengguna di konteks aman (hanya teksnya yang diubah), perangkat sungguhan, CCTV, pencarian.
+
+## Uji ulang setelah rel terlihat di 3D
+
+15 November 2026. Desktop 1440×900, bahasa Indonesia, lapisan bus mati. **15 butir, 15 lulus.** Bukti berawalan `v4-` di `var/shots/`: `v4-sebelum-*` dari kode 96bd779 (server kedua di port 4794, data yang sama), `v4-sesudah-*` dari kode sekarang, sudut kamera sama (zoom 18,3, kemiringan 60°).
+
+| # | Butir | Hasil | Bukti |
+|---|---|---|---|
+| 1 | MRT berpapasan di viaduk (07.20, Blok A–Blok M): dua rel terlihat, tiap kereta di relnya | Lulus | `v4-sesudah-mrt-viaduk.png` |
+| 2 | LRT Jakarta berpapasan di viaduk (07.25, dekat Equestrian) | Lulus | `v4-sesudah-lrt-jakarta.png` |
+| 3 | LRT Jabodebek berpapasan di viaduk (07.23, Cikoko–Pancoran) | Lulus | `v4-sesudah-lrt-jabodebek.png` |
+| 4 | KRL berpapasan di viaduk (07.17, Juanda–Gondangdia) | Lulus | `v4-sesudah-krl-juanda-viaduk.png` |
+| 5 | KRL berpapasan di permukaan, Depok (07.04) | Lulus | `v4-sesudah-krl-depok-permukaan.png` |
+| 6 | KRL berpapasan di permukaan, Bekasi Timur (07.19) | Lulus | `v4-sesudah-krl-bekasi-permukaan.png` |
+| 7 | MRT berpapasan di terowongan, mode Bawah tanah (07.30, Bendungan Hilir–Istora): tiap arah di tabungnya | Lulus | `v4-sesudah-mrt-terowongan.png` |
+| 8 | Ride "Dari belakang" di terowongan dengan kereta lawan | Lulus | `v4-e2e-ride-dari-belakang-kereta-lawan.png`; kereta lawan tampak di kiri, di luar tabung kereta yang dinaiki, tidak menembusnya |
+| 9 | Ride "Kabin" | Lulus | `v4-e2e-ride-kabin-kereta-lawan.png`; `rideView = "cab"` |
+| 10 | Rel tunggal (KA Pangrango, lintas Sukabumi): satu rel, kereta di atasnya | Lulus | `v4-sesudah-rel-tunggal.png` |
+| 11 | Ujung jalur Lebak Bulus 11.40 (M-L1140-LBB berangkat, M-L1113-BHI tiba): dua rel, tidak menembus | Lulus | `v4-sesudah-ujung-lebak-bulus.png`, `v4-sesudah-ujung-lebak-bulus-dekat.png` |
+| 12 | Ikuti kereta di 3D: garis rute di rel kereta itu | Lulus | `v4-e2e-ikuti-3d.png`; 0 fitur `tk-pick` dan 0 fitur `tk-rest` tergambar di tanah |
+| 13 | Rentang zoom, kamera miring 55°: 14,5 · 15 · 15,5 · 16 · 16,5 · 17 · 17,5 · 18 · 19 di MRT viaduk dan KRL Depok | Lulus | `v4-zoom-mrt-viaduk-z*.png`, `v4-zoom-krl-depok-z*.png` (18 tangkapan) |
+| 14 | 2D utuh setelah 3D dimatikan | Lulus | `v4-e2e-2d-sesudah-3d.png`; filter `tk-rest` dan `tk-pick` kembali `["==",["get","ug"],0]` |
+| 15 | Tanpa galat konsol | Lulus | 0 error; satu peringatan MapLibre `Too many glyphs` saat ride |
+
+Catatan jujur tentang butir 13: dari 18 tangkapan rentang zoom, yang saya lihat satu per satu adalah zoom 14,5, 16, dan 17 (MRT) serta 15,5 dan 19 (Depok); sisanya diambil tetapi tidak saya buka. Tangkapan rentang zoom diambil saat pita rel masih selebar 1,9 m (kemudian dirampingkan menjadi 1,4 m). Bahwa dua badan kereta tidak bisa saling menutupi di ruas ganda pada zoom mana pun mengikuti dari hitungannya (jarak sumbu ≥ 4 m × pelebaran, lebar badan 2,95 m × pelebaran), bukan hanya dari tangkapan.
+
+Yang tidak diuji: zoom di bawah 14,2 (di sana kereta 3D tidak tampil), perangkat sungguhan, mode "Skala asli" di Bawah tanah, dan ujung jalur selain Lebak Bulus.

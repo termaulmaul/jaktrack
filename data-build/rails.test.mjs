@@ -74,3 +74,14 @@ test('dua kereta berpapasan di jalur ganda tidak pernah saling menutupi', async 
   const wide = (kw) => Math.ceil(Math.max(1, kw) * 4) / 4;
   for (const kw of [1, 1.1, 1.3, 2, 3.7, 6]) expect(2 * MIN_HALF_M * wide(kw) - CAR_W * kw).toBeGreaterThan(0.9);
 });
+
+test('rel terlihat: pelebaran jarak rel tidak pernah lebih sempit dari badan kereta, pada zoom mana pun', async () => {
+  const { kwAtZoom, wideOf, CAR_W } = await import('../web/src/layers/city3d/vehicles.js');
+  const { MIN_HALF_M } = await import('../web/src/tokyo/rails.js');
+  for (let z = 14; z <= 22; z += 0.05) {
+    const kw = kwAtZoom(z);
+    expect(2 * MIN_HALF_M * wideOf(kw)).toBeGreaterThan(CAR_W * kw);   // jarak sumbu dua rel > lebar satu badan
+  }
+  expect(kwAtZoom(19)).toBe(1);
+  expect(kwAtZoom(14)).toBe(8);
+});
