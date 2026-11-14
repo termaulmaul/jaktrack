@@ -31,7 +31,8 @@ const LANGS = ['en', 'ja', 'id'];
 export const CONTACT = CONFIG_CONTACT;
 /** Fallbacks when the data pack carries no meta.source: the pinned Mini Tokyo 3D snapshot (data-build/paths.mjs). */
 export const DATA_OBTAINED = null;
-export const SNAPSHOT = { name: 'Mini Tokyo 3D', ref: 'fa7833f', date: '2026-11-02' };
+// shortcut: tanggal = meta.built_at berkas asset-krl yang dipakai sekarang; perbarui bila berkas sumber diganti (atau baca dari meta jaringan)
+export const SNAPSHOT = { name: 'Open-KRL via trafik.live', ref: '', date: '2026-10-12' };
 
 export const URLS = {
   odpt: 'https://www.odpt.org/',

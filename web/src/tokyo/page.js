@@ -667,7 +667,7 @@ function stampText() {
   const src = S.model?.meta?.source, c = loaded.credits;
   const date = src?.date || c?.SNAPSHOT?.date;
   if (!date) return '';
-  return `${c?.SNAPSHOT?.name || 'Mini Tokyo 3D'}, ${typeof c?.fmtDate === 'function' ? c.fmtDate(date, I.lang()) : date}`;
+  return `${c?.SNAPSHOT?.name || 'Open-KRL via trafik.live'}, ${typeof c?.fmtDate === 'function' ? c.fmtDate(date, I.lang()) : date}`;
 }
 /** Place-page head; the close button only on desktop (phones have the top bar's back button). */
 function head({ lead, titleHtml, sub = '' }) {
