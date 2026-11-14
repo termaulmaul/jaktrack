@@ -3,6 +3,7 @@
 // Then: the static pack (/data/tokyo/bus-v1.json, data-build/bus.mjs: GTFS PT Transportasi Jakarta) loads once, sim.js
 // lists the buses on the road every 10 s (one per headway of each trip pattern; no network request), and every bus
 // follows its own trip's shape at the timetable's stop times (store.js applySim) in a WebGL layer UNDER the trains.
+// Time is the page clock (opts.now / opts.rate: playback.js), so buses follow a playback like the trains do.
 // Tap a bus -> opts.open('bus', id); select(id) rings it, dims the other routes and draws its route + stops.
 //
 //   import { mountBuses } from './buses/index.js'
@@ -35,7 +36,7 @@ export function busChipHtml(lang = 'en', on = false, t) {
 }
 
 export function mountBuses(map, opts = {}) {
-  const o = { data: '/data/tokyo/', every: 10000, before: null, lang: 'en', open: null, onChange: null, ...opts };
+  const o = { data: '/data/tokyo/', every: 10000, now: Date.now, rate: () => 1, before: null, lang: 'en', open: null, onChange: null, ...opts };
   let lang = o.lang;
   let on = false, destroyed = false;
   let pack = null, trips = null, packP = null, store = null, layer = null, shapes = null, atlas = null;
@@ -69,6 +70,7 @@ export function mountBuses(map, opts = {}) {
       stopAlong: (trip, seq) => { const p = pack.tripPat(trip); const i = pack.seqIndex(p, seq); return i >= 0 ? p.along[i] : null; },
       routeInfo: (id) => { const r = pack.route(id); return r ? { short: r.tag.ja, rgb: r.rgb, trgb: r.trgb } : null; },
       labelFor: (text) => atlas.get(text),
+      clock: o.now, rate: o.rate,
     });
     layer = new BusLayer(store, atlas, {
       afterFrame: () => {
@@ -76,7 +78,8 @@ export function mountBuses(map, opts = {}) {
         // frame rate from how fast buses cross the screen (battery): Toei buses roll ~4.5 m/s, so city views need few
         const v = store.maxSpeedPx;
         let fps = 60;
-        if (layer.focusMix % 1 === 0 && !store.fading) fps = v < 0.5 ? 5 : v < 2.5 ? 12 : v < 10 ? 30 : v < 30 ? 45 : 60;
+        if (o.rate() > 1) fps = 60;   // a fast playback
+        else if (layer.focusMix % 1 === 0 && !store.fading) fps = v < 0.5 ? 5 : v < 2.5 ? 12 : v < 10 ? 30 : v < 30 ? 45 : 60;
         if (store.count === 0) fps = 2;
         if (fps >= 60) map.triggerRepaint();
         else frameTimer = setTimeout(() => { frameTimer = 0; map.triggerRepaint(); }, 1000 / fps - 4);
@@ -117,24 +120,29 @@ export function mountBuses(map, opts = {}) {
   }
 
   // ------------------------------------------------------------ simulated from the timetable (sim.js): no network
+  let last = null;   // { ms, perf, rate } of the pass before: a clock that jumped (a scrub, another speed) starts afresh
   function poll() {
     pollTimer = 0;
     if (!on || destroyed || !store) return;
     if (typeof document !== 'undefined' && document.hidden) { nextPoll = Date.now(); return; }   // again when shown
-    const nowMs = Date.now(), nowPerf = performance.now();
+    const nowMs = o.now(), nowPerf = performance.now(), rate = o.rate();
+    // the page clock (playback.js): o.now() is real time, or a playback's virtual clock running at `rate`
+    if (last && (rate !== last.rate || Math.abs(nowMs - (last.ms + (nowPerf - last.perf) * last.rate)) > 5000)) store.reset();
+    last = { ms: nowMs, perf: nowPerf, rate };
     const list = busesNow(trips, pack.sim.calendar, nowMs).map(({ trip, el }) => {
       const dep = nowMs - el * 1000;   // id = pattern + departure time: the same bus in every pass
-      return { id: `${trip.id}.${Math.round(dep / 1000)}`, trip: trip.id, route: trip.route, kt: trip.st.map((s) => nowPerf - (el - s) * 1000), ks: trip.along };
+      return { id: `${trip.id}.${Math.round(dep / 1000)}`, trip: trip.id, route: trip.route, dep, st: trip.st, ks: trip.along };
     });
     store.applySim(list, nowPerf);
-    lastSnap = { at: nowMs, buses: list }; lastOkAt = nowMs; polls++; error = null;
+    lastSnap = { at: nowMs, buses: list }; lastOkAt = Date.now(); polls++; error = null;
     if (selId) {   // selected before its bus was in: dim the other routes now
       const sb = store.get(selId);
       if (sb && store.focus !== sb.route) store.setFocusRoute(sb.route);
       drawSel();
     }
     if (pendingFly && store.get(pendingFly.id)) { const f = pendingFly; pendingFly = null; api.fly(f.id, f.opts); }
-    nextPoll = nowMs + o.every; pollTimer = setTimeout(poll, o.every);
+    const wait = Math.max(500, o.every / Math.max(1, rate));   // a fast playback: departures and arrivals come sooner
+    nextPoll = Date.now() + wait; pollTimer = setTimeout(poll, wait);
     kick();
     emit();
   }
@@ -210,7 +218,7 @@ export function mountBuses(map, opts = {}) {
     }
     return {
       id: b.id, trip: b.trip, route, op: pack.opOf(b.route), head, next, more, last, lngLat: store.lngLat(b),
-      reportAt: Date.now(), stale: false, stopSeq: b.stopSeq, mode: b.mode,   // simulated: there is no report to age
+      reportAt: o.now(), stale: false, stopSeq: b.stopSeq, mode: b.mode,   // simulated: there is no report to age
     };
   }
 
@@ -246,6 +254,10 @@ export function mountBuses(map, opts = {}) {
       return on;
     },
     toggle() { return api.setOn(!on); },
+    /** The page clock changed (a playback started, scrubbed, changed speed, went back to now): simulate again, soon. */
+    refresh() { if (on && !destroyed && store) { clearTimeout(pollTimer); pollTimer = setTimeout(poll, 120); } },
+    /** How many buses are on the road at page-clock ms (null before the pack is in). */
+    countAt: (ms) => (trips ? busesNow(trips, pack.sim.calendar, ms).length : null),
     setLang(l) { lang = l || 'en'; },
     /** Ring + dim the other routes + its route line and stops; null clears. */
     select(id) {

@@ -62,7 +62,7 @@ const DICT = {
     'data.date': 'Timetable data: Mini Tokyo 3D of {date}, obtained {obtained}.',
     'route.sub': 'From one station to another, with changes', 'route.from': 'Route from here', 'route.to': 'Route to here',
     'jst': 'WIB',
-    'pill.est': 'Estimated', 'pill.est.aria': 'Estimated position: what this means', 'pill.live': 'Live position · {time}', 'buses.pb': 'Buses are simulated for the present time only: go back to now to see them.', 'update.reload': 'A newer version is out: reload the page.',
+    'pill.est': 'Estimated', 'pill.est.aria': 'Estimated position: what this means', 'pill.live': 'Live position · {time}', 'update.reload': 'A newer version is out: reload the page.',
   },
   ja: {
     'brand': `${APP_NAME}`,
@@ -108,7 +108,7 @@ const DICT = {
     'data.date': '時刻表データ: Mini Tokyo 3D（{date}版、{obtained}取得）。',
     'route.sub': '駅から駅まで、乗り換えも', 'route.from': 'ここから出発', 'route.to': 'ここへ行く',
     'jst': '日本時間',
-    'pill.est': '推定', 'pill.est.aria': '推定位置について', 'pill.live': '実際の位置 · {time}時点', 'buses.pb': 'バスのシミュレーションは現在の時刻のみです。現在の時刻に戻すと表示されます。', 'update.reload': '新しいバージョンがあります。ページを再読み込みしてください。',
+    'pill.est': '推定', 'pill.est.aria': '推定位置について', 'pill.live': '実際の位置 · {time}時点', 'update.reload': '新しいバージョンがあります。ページを再読み込みしてください。',
   },
   id: {
     'brand': `${APP_NAME}`,
@@ -154,7 +154,7 @@ const DICT = {
     'data.date': 'Data jadwal: Mini Tokyo 3D per {date}, diambil {obtained}.',
     'route.sub': 'Dari satu stasiun ke stasiun lain, dengan transit', 'route.from': 'Rute dari sini', 'route.to': 'Rute ke sini',
     'jst': 'WIB',
-    'pill.est': 'Perkiraan', 'pill.est.aria': 'Posisi perkiraan: apa artinya', 'pill.live': 'Posisi langsung · per {time}', 'buses.pb': 'Simulasi bus hanya untuk waktu sekarang: kembali ke sekarang untuk melihatnya.', 'update.reload': 'Ada versi baru: muat ulang halaman.',
+    'pill.est': 'Perkiraan', 'pill.est.aria': 'Posisi perkiraan: apa artinya', 'pill.live': 'Posisi langsung · per {time}', 'update.reload': 'Ada versi baru: muat ulang halaman.',
   },
 };
 
@@ -596,6 +596,7 @@ Object.assign(DICT.id, {
 // the bus layer keys (web/src/tokyo/buses/ 'bus.*': the Buses button, the bus sheet; view.js BUS_TEXT is the same
 // table as a fallback, these win; copy reviewed 3 Nov 2026)
 Object.assign(DICT.en, {
+  'bus.row.sub': 'Buses · simulated from the timetable', 'bus.row.off': 'Buses · simulated from the timetable · tap to show', 'bus.word': 'buses',
   'bus.chip': 'Buses',
   'bus.chip.aria': 'Show TransJakarta buses (simulated from the timetable)',
   'bus.op': 'TransJakarta',
@@ -620,6 +621,7 @@ Object.assign(DICT.en, {
   'bus.credit.other': 'Bus routes, stops and timetable: GTFS PT Transportasi Jakarta (gtfs.transjakarta.co.id), modified. Bus positions are simulated from the timetable; accuracy not guaranteed. Not affiliated with TransJakarta.',
 });
 Object.assign(DICT.ja, {
+  'bus.row.sub': 'バス · 時刻表からのシミュレーション', 'bus.row.off': 'バス · 時刻表からのシミュレーション · タップで表示', 'bus.word': '台',
   'bus.chip': 'バス',
   'bus.chip.aria': 'トランスジャカルタのバスを表示（時刻表からのシミュレーション）',
   'bus.op': 'トランスジャカルタ',
@@ -644,6 +646,7 @@ Object.assign(DICT.ja, {
   'bus.credit.other': 'バスの路線・停留所・時刻表：GTFS PT Transportasi Jakarta（gtfs.transjakarta.co.id）を加工して利用。バスの位置は時刻表からのシミュレーションで、正確性は保証されません。トランスジャカルタとは無関係です。',
 });
 Object.assign(DICT.id, {
+  'bus.row.sub': 'Bus · simulasi dari jadwal', 'bus.row.off': 'Bus · simulasi dari jadwal · ketuk untuk menampilkan', 'bus.word': 'bus',
   'bus.chip': 'Bus',
   'bus.chip.aria': 'Tampilkan bus TransJakarta (simulasi dari jadwal)',
   'bus.op': 'TransJakarta',

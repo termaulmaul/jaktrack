@@ -35,7 +35,7 @@ Diambil 14 November 2026 sekitar pukul 22.55 WIB dari server dev lokal, dalam ba
 Sudah dicoba di browser dan berjalan:
 
 - **Peta 2D** dengan setiap kereta bergerak di relnya, berwarna sesuai jalur. Sekitar 60–85 kereta pada malam hari.
-- **Bus TransJakarta (simulasi dari jadwal)**: tombol bus di kartu kontrol peta menyalakannya. Tiap bus bergerak di sepanjang rutenya dan bisa diketuk untuk melihat rute, tujuan, dan halte berikutnya. Ini bukan posisi langsung; lihat [keterbatasannya](#bus-transjakarta-simulasi-bukan-posisi-langsung).
+- **Bus TransJakarta (simulasi dari jadwal)**: menyala secara bawaan bila data bus sudah dibangun; tombol bus di kartu kontrol peta mematikan atau menyalakannya, dan pilihan itu diingat browser. Beranda memuat baris TransJakarta dengan jumlah bus pada jam halaman (tidak dijumlahkan ke angka kereta). Tiap bus bergerak di sepanjang rutenya dan bisa diketuk untuk melihat rute, tujuan, dan halte berikutnya. Ini bukan posisi langsung; lihat [keterbatasannya](#bus-transjakarta-simulasi-bukan-posisi-langsung).
 - **Daftar jalur** dan **ringkasan per operator**.
 - **Papan stasiun**: kereta berikutnya tiap arah, kereta pertama dan terakhir.
 - **Detail kereta**: semua pemberhentian, posisi sekarang, dan mode mengikuti kereta.
@@ -205,7 +205,7 @@ Bus di peta dihitung dari jadwal GTFS, bukan dari GPS armada. Semua teks bus di 
 - **Headway adalah satu-satunya jadwal.** GTFS ini tidak memuat jam keberangkatan tiap bus, jadi letak tiap bus di antara dua keberangkatan adalah anggapan (keberangkatan pertama tepat pada awal jendela).
 - **Bus tidak berhenti di halte** dan tidak menunggu di terminal: tiap bus berjalan rata dari halte ke halte, lalu hilang di halte terakhir.
 - **Hari libur nasional** memakai jadwal hari biasanya (tidak ada `calendar_dates`).
-- **Pemutaran ulang waktu** tidak berlaku untuk bus: simulasi hanya untuk waktu sekarang, dan bus dimatikan selama pemutaran ulang.
+- **Pemutaran ulang waktu** berlaku juga untuk bus: bus mengikuti jam halaman, termasuk saat dipercepat. Jejak di belakang bus dimatikan selama pemutaran dipercepat.
 - **Kinerja**: pada 5.867 bus, peta berjalan 60 fps di Chromium pada Apple M5 (seluruh Jakarta dan tampilan dekat). Belum diukur di ponsel.
 - **Kredit bus** di Tentang → Data dan kredit hanya tampil selama lapisan bus menyala; lembar tiap bus selalu memuatnya.
 

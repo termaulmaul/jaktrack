@@ -776,6 +776,12 @@ export function homeView(ctx) {
     const opn = opText({ id: o.op, title: o.title });
     return `<button type="button" class="row" data-tab="lines" aria-label="${esc(`${opn}, ${tn('n.trains', o.n)}`)}">${opTile(o.op, o.title)}<span class="rt"><b>${esc(opn)}</b><span>${esc(`${tn('n.lines', o.lines.length)} · ${top}`)}</span></span><span class="rr"><span class="big">${esc(fmtNum(o.n))}</span><small>${esc(t('board.trains.word'))}</small></span></button>`;
   });
+  // TransJakarta: buses simulated from the GTFS timetable (web/src/tokyo/buses/). Its own row and its own count, never
+  // added to the trains; only when the bus pack was built (ctx.tj). A tap switches the bus layer on and shows the map.
+  if (ctx.tj) {
+    const n = ctx.tj.on && Number.isFinite(ctx.tj.n) ? ctx.tj.n : null, sub = t(ctx.tj.on ? 'bus.row.sub' : 'bus.row.off');
+    rows.push(`<button type="button" class="row" data-act="buses-map" aria-label="${esc(`TransJakarta, ${n != null ? `${fmtNum(n)} ${t('bus.word')}, ` : ''}${sub}`)}">${opTile('TransJakarta', { en: 'TransJakarta' })}<span class="rt"><b>TransJakarta</b><span>${esc(sub)}</span></span>${n != null ? `<span class="rr"><span class="big">${esc(fmtNum(n))}</span><small>${esc(t('bus.word'))}</small></span>` : ''}</button>`);
+  }
   return `${nowBlock(ctx, m, ms, r, 'home')}
     ${serviceBlock(ctx, m)}
     ${home}
@@ -792,7 +798,7 @@ const busesOf = (ctx) => ctx?.buses ?? (typeof globalThis !== 'undefined' ? glob
 let busOpen = null;
 function busesBlock(ctx) {
   const bz = busesOf(ctx);
-  if (!bz?.on || ctx?.playback || typeof bz.near !== 'function' || typeof bz.rowsHtml !== 'function') return '';
+  if (!bz?.on || typeof bz.near !== 'function' || typeof bz.rowsHtml !== 'function') return '';
   let c = null;
   try { c = ctx.map?.getCenter?.(); } catch { c = null; }
   if (!c || !Number.isFinite(c.lng) || !Number.isFinite(c.lat)) return '';

@@ -36,7 +36,10 @@ export class BusStore {
    * along metres of the stop the feed reports the bus at (current_stop_sequence) | null; routeInfo(routeId) ->
    * {short, rgb, trgb} | null; labelFor(text) -> {i, w} | null.
    */
-  constructor({ shapes, tripShape = () => -1, stopsAlong = () => null, stopAlong = () => null, routeInfo = () => null, labelFor = () => null }) {
+  constructor({ shapes, tripShape = () => -1, stopsAlong = () => null, stopAlong = () => null, routeInfo = () => null, labelFor = () => null, clock = Date.now, rate = () => 1 }) {
+    this.clock = clock;       // the page clock (ms since epoch; a playback's virtual clock): simulated buses move by it
+    this.rate = rate;         // page-clock seconds per real second (0 paused, 300 in a fast playback)
+    this.simT = 0;
     this.shapes = shapes;
     this.tripShape = tripShape;
     this.stopsAlong = stopsAlong;
@@ -121,12 +124,13 @@ export class BusStore {
   }
 
   /**
-   * Simulated buses (sim.js, from the GTFS timetable; nothing is fetched): list = [{id, trip, route, kt, ks}], kt = this
-   * page's performance.now() time at each stop, ks = along metres of each stop. The whole run is known, so a bus just
-   * follows its keyframes; every bus not in the list fades out.
+   * Simulated buses (sim.js, from the GTFS timetable; nothing is fetched): list = [{id, trip, route, dep, st, ks}], dep =
+   * page-clock ms of the departure, st = seconds to each stop, ks = along metres of each stop. The whole run is known,
+   * so a bus just follows its keyframes on the page clock (evalPos); every bus not in the list fades out.
    */
   applySim(list, nowPerf = performance.now()) {
     this.dirty.frames = true;
+    this.simT = this.clock();
     const seen = new Set();
     for (const r of list) {
       seen.add(r.id);
@@ -135,7 +139,7 @@ export class BusStore {
       const tsi = this.tripShape(r.trip);
       if (tsi < 0) continue;
       b = this._new(r.id, nowPerf);
-      Object.assign(b, { trip: r.trip, route: r.route, tsi, msi: tsi, mode: 'shape', kt: r.kt, ks: r.ks, placed: true });
+      Object.assign(b, { trip: r.trip, route: r.route, tsi, msi: tsi, mode: 'shape', sim: true, kt: r.st.map((s) => r.dep + s * 1000), ks: r.ks, placed: true });
       this._style(b);
       const p = this.evalPos(b, nowPerf, this._q);
       this._placeAt(b, p.x, p.y, p.h, nowPerf, false);
@@ -370,6 +374,7 @@ export class BusStore {
   /** Where bus b is drawn at time t (ms): out.x, out.y (metres), out.h (heading of travel), out.moving, out.v (m/ms). */
   evalPos(b, t, out) {
     if (b.mode === 'shape' && b.msi >= 0 && b.kt.length) {
+      if (b.sim) t = this.simT;   // simulated: keyframes are on the page clock
       const kt = b.kt, ks = b.ks;
       let s = ks[ks.length - 1], v = 0, i = 1;
       if (t <= kt[0]) s = ks[0];
@@ -458,6 +463,8 @@ export class BusStore {
     this.cullView = view;
     this.dirty.frames = false;
     this.dirty.dyn = true;
+    this.simT = this.clock();
+    const rk = this.rate();
     const dyn = this.dyn, vl = this.visList, vc = this.visCol, col = this.col, info = this.info;
     let visible = 0, maxV = 0, vn = 0, fading = 0;
     const p = this._p;
@@ -477,7 +484,7 @@ export class BusStore {
       if (p.x < view[0] - 60 || p.x > view[2] + 60 || p.y < view[1] - 60 || p.y > view[3] + 60) { dyn[o + 3] = 0; b.vis = false; b.x = p.x; b.y = p.y; continue; }
       const want = p.moving || b.mode === 'shape' ? p.h : b.h;
       b.h += angDiff(b.h, want) * kh;
-      if (p.moving) { const v = p.v; if (v > maxV) maxV = v < 0.03 ? v : 0.03; }
+      if (p.moving) { const v = p.v * (b.sim ? rk : 1); if (v > maxV) maxV = v < 0.03 ? v : 0.03; }
       if (p.moving) b.lastMove = now;
       b.x = p.x; b.y = p.y; b.vis = true;
       if (b.pres !== target) fading++;
@@ -487,7 +494,7 @@ export class BusStore {
       dyn[o + 2] = b.h;
       dyn[o + 3] = b.pres;
       visible++;
-      if (now - b.lastMove < 30000 && !(this.focus && b.route !== this.focus)) {
+      if (rk <= 1 && now - b.lastMove < 30000 && !(this.focus && b.route !== this.focus)) {
         const v = vn * 8, c = vn * 4, cs = slot * 8;
         vl[v] = slot; vl[v + 1] = mx; vl[v + 2] = my; vl[v + 3] = b.pres;
         vl[v + 4] = info[slot * 4]; vl[v + 5] = info[slot * 4 + 3]; vl[v + 6] = 0; vl[v + 7] = 0;

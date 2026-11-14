@@ -30,6 +30,7 @@ import nightArt from './art/night.svg';
 // the app's art: the loop with a train (About button, loading card, empty states) and the night after the last train
 const ART = { anker: trainArt, tidur: nightArt };
 const HOME_KEY = 'tokyo.mystation';
+const BUS_KEY = 'tokyo.buses';   // '0' = the user switched the bus layer off (it is on by default when the bus pack is there)
 const REFRESH_MS = 15000;
 // desktop = the docked pane: wide screens, and phones held sideways (styles.js mirrors the pane CSS for that query)
 const desktopMQ = matchMedia('(min-width: 900px), (min-width: 640px) and (max-height: 500px) and (orientation: landscape)');
@@ -355,6 +356,7 @@ function ctx() {
     nearby: !!S.nearby,   // the picker card's pill starts nearby.js's "Trains near me" (views.js says so with t('nb.go'))
     liveN: liveCount(), liveOnly: liveOnlyOn(),   // the headline's live count + the Live chip (views.js)
     say,   // one polite announcement (a filter change, a result count); never per tick
+    tj: S.busPack ? { on: !!S.busesOn, n: S.busesOn && S.buses?.on ? S.buses.stats().feed : null } : null,   // the home's TransJakarta row
     liveBus: !!S.busesOn, gsi: (() => { try { return S.city3d?.state?.()?.elev === 'elev2'; } catch { return false; } })(),   // credits for what is in use
   };
 }
@@ -522,7 +524,6 @@ function updateSchedPill() {
 }
 
 function render() {
-  if (S.busesOn && S.pb && !S.pb.isLive()) toggleBuses(false);   // buses are live data: off in a playback
   if (S.afterReady) keepAhead();   // back from a playback, a tab woken after hours: the hours around now
   syncLiveOnly();
   updateSchedPill();
@@ -931,6 +932,7 @@ app.addEventListener('click', (e) => {
   if (d.act === 'route-from' || d.act === 'route-to') { open('route', `${d.act === 'route-from' ? 'from' : 'to'}:${d.id}`); return; }
   if (d.act === 'sched') { open(HAS.coverage ? 'live' : 'about', '1'); return; }
   if (d.act === 'live-only') { toggleLiveOnly(); return; }
+  if (d.act === 'buses-map') { toggleBuses(true); if (!isDesktop()) sheet.snap('peek'); return; }   // the home's TransJakarta row: buses on, the map in view
   if (d.act === 'see-ug') { seeUnderground(d.id); return; }   // the underground view
   if (d.act === 'ride-ug') { rideUnderground(d.id); return; }   // ride along in the tunnel
   if (d.act === 'locate') {
@@ -1300,13 +1302,13 @@ async function toggle3D(want, quiet = false) {   // quiet: no tilt / Shinjuku fl
 // ------------------------------------------------------------------ TransJakarta buses, SIMULATED from the timetable
 // Off by default (the page is train-first). The bus button in the control card turns them on: the static pack loads once,
 // buses/sim.js works the buses out from the GTFS frequencies (no request), buses draw UNDER the trains. A tap on a bus opens its sheet (#b=<id>).
-// Live data only: in a playback.js (virtual clock) they switch off.
+// They run on the page clock (NOW: playback.js), so a playback moves them like the trains. On by default; BUS_KEY keeps an off.
 const busBtn = $('#b-bus');
 async function toggleBuses(want) {
   const on = want == null ? !S.busesWant : !!want;
   if (on === !!S.busesWant) return;
-  if (on && S.pb && !S.pb.isLive()) { toast(t('buses.pb')); return; }   // live data only, never under a playback clock
   S.busesWant = on; S.busesOn = on;
+  try { localStorage.setItem(BUS_KEY, on ? '1' : '0'); } catch { /* storage blocked: this visit only */ }
   busBtn.setAttribute('aria-pressed', String(on));   // at once; the pack loads behind it
   if (S.busesBusy) return;                           // the call already running settles to the newest wish
   S.busesBusy = true;
@@ -1318,8 +1320,9 @@ async function toggleBuses(want) {
         const m = await need('buses');
         if (typeof m?.mountBuses !== 'function' || !S.map) { S.busesWant = S.busesOn = false; busBtn.setAttribute('aria-pressed', 'false'); return; }
         try {
-          S.buses = m.mountBuses(S.map, { lang: I.lang(), open: (type, id) => open(type, id), before: 'tokyo-trains',
+          S.buses = m.mountBuses(S.map, { lang: I.lang(), open: (type, id) => open(type, id), before: 'tokyo-trains', now: NOW, rate: () => (S.pb ? S.pb.rate() : 1),
             onChange: (st) => {
+              if (st?.feed !== S.busN) { S.busN = st?.feed; if (screen().name === 'home') render(); }   // the home's TransJakarta row
               if (S.busSay && st?.on && st.feed) { S.busSay = false; say(t('bus.count', { n: I.fmtNum(st.feed) })); }   // once per switch-on
               if (screen().name === 'bus') render();
             } });
@@ -1950,7 +1953,12 @@ $('#load-retry').addEventListener('click', () => location.reload());
   setPlaceholder();
   try { history.replaceState(stateOf(), '', location.href); } catch { /* fine */ }
   if (HAS.city3d) { $('#b-3d').hidden = false; ugButton(); }   // one-tap Underground in the card
-  if (HAS.buses) hasPack('bus-latest.json').then((yes) => { busBtn.hidden = !yes; });   // the bus pack: npm run data:bus
+  if (HAS.buses) hasPack('bus-latest.json').then((yes) => {
+    busBtn.hidden = !yes; S.busPack = yes;
+    let off = false;
+    try { off = localStorage.getItem(BUS_KEY) === '0'; } catch { /* storage blocked */ }
+    if (yes && !off) toggleBuses(true); else if (yes) render();   // on by default; the home row shows either way
+  });   // the bus pack: npm run data:bus
 }
 sheet.snap(S.stack.length ? 'half' : 'peek', { instant: true });
 show();
@@ -1962,6 +1970,7 @@ startOffline();   // at boot, so the offline note shows even when the data canno
 need('playback').then((pb) => {
   if (typeof pb?.createPlayback !== 'function') return;
   S.pb = pb.createPlayback({ now: Date.now, reduceMotion });
+  S.pb.onChange(() => { try { S.buses?.refresh?.(); } catch { /* fine */ } });   // simulated buses follow the page clock
   const row = $('#tk-tl');
   if (!row || typeof pb.mountPlayback !== 'function') return;
   try {
