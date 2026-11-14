@@ -23,6 +23,7 @@
 //   credit (OpenFreeMap / OpenMapTiles, or Protomaps for self-hosted tiles) in About.
 // - Name no live source beyond what the licences require.
 import { BASEMAP, CONTACT as CONFIG_CONTACT } from './config.js';
+import { APP_NAME } from '../project.js';
 
 const LANGS = ['en', 'ja', 'id'];
 
@@ -241,6 +242,20 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
   ];
 }
 
+// ------------------------------------------------------------------ CCTV (cctv.js; shown once the camera pack is loaded)
+/** The CCTV block: every owner in the camera pack's `sources` ({code: {name, owner, page}}), and whose video it is. */
+export function cctvCredit(lang = 'en', sources = {}) {
+  const L = LANGS.includes(lang) ? lang : 'en';
+  const list = Object.values(sources || {});
+  const owners = [...new Set(list.map((s) => s.owner))].join(L === 'ja' ? '、' : '; ');
+  const text = {
+    en: [`Traffic cameras of: ${owners}.`, `The video belongs to each owner and is loaded straight from the owner\u2019s server when you open a camera; ${APP_NAME} does not proxy, record or store it, and is not affiliated with any of them. Camera list compiled by trafik.live (no licence stated; not part of this repository).`],
+    ja: [`交通カメラの提供元：${owners}。`, `映像は各提供元のもので、カメラを開いたときに提供元のサーバーから直接読み込みます。${APP_NAME} は映像を中継・録画・保存せず、いずれの提供元とも提携していません。カメラ一覧は trafik.live がまとめたものです（ライセンスの記載なし。このリポジトリには含まれません）。`],
+    id: [`Kamera lalu lintas milik: ${owners}.`, `Video adalah milik masing-masing pemilik dan dimuat langsung dari server pemilik saat kamera dibuka; ${APP_NAME} tidak memproksi, merekam, atau menyimpannya, dan tidak berafiliasi dengan satu pun dari mereka. Daftar kamera disusun oleh trafik.live (tanpa lisensi yang dinyatakan; tidak termasuk dalam repositori ini).`],
+  }[L];
+  return { key: 'cctv', head: 'CCTV', lines: text, links: list.map((s) => ({ href: s.page, label: s.name })) };
+}
+
 /** credits = { en, ja, id }: the About blocks with today's constants (plain text, no HTML). */
 export const credits = Object.fromEntries(LANGS.map((l) => [l, creditsFor(l)]));
 
@@ -265,6 +280,7 @@ function escHtml(s) {
 export function creditsHtml(ctx = {}) {
   const esc = typeof ctx.esc === 'function' ? ctx.esc : escHtml;
   const blocks = creditsFor(ctx.lang, ctx.model?.meta?.source || null, { live: liveOn(ctx), bus: ctx.bus || null, liveBus: !!ctx.liveBus, gsi: !!ctx.gsi });
+  if (ctx.cctv) blocks.splice(Math.max(0, blocks.length - 2), 0, cctvCredit(ctx.lang, ctx.cctv));   // before "not affiliated" + licences
   return blocks.map((b) => {
     const lines = b.lines.map((t, i) => {
       if (b.key === 'odpt' && i === ODPT_NOTICE.en.length) {

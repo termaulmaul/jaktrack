@@ -784,6 +784,48 @@ Object.assign(DICT.id, {
 });
 // (end of RESET keys)
 
+// CCTV keys (cctv.js 'cctv.*': the camera button in the control card, the camera sheet)
+Object.assign(DICT.en, {
+  'cctv.chip.aria': 'Show traffic cameras (CCTV)',
+  'cctv.count': '{n} traffic cameras on the map',
+  'cctv.loading': 'Loading cameras…',
+  'cctv.gone': 'This camera is not in the list.',
+  'cctv.owner': 'Owner: {owner}',
+  'cctv.open': 'Open on the owner’s site',
+  'cctv.views': 'Camera angles',
+  'cctv.linkonly': 'This camera can only be watched on the owner’s site.',
+  'cctv.nohls': 'This browser cannot play the stream inside this page (no built-in HLS; Safari can). Watch it on the owner’s site.',
+  'cctv.fail': 'The stream did not answer here. Try the owner’s site.',
+  'cctv.credit': `Video: {owner}, loaded straight from the owner’s server. ${APP_NAME} does not proxy or store it and is not affiliated with the owner.`,
+});
+Object.assign(DICT.ja, {
+  'cctv.chip.aria': '交通カメラ（CCTV）を表示',
+  'cctv.count': '交通カメラ {n} 台を地図に表示',
+  'cctv.loading': 'カメラを読み込み中…',
+  'cctv.gone': 'このカメラは一覧にありません。',
+  'cctv.owner': '提供元：{owner}',
+  'cctv.open': '提供元のサイトで開く',
+  'cctv.views': 'カメラの向き',
+  'cctv.linkonly': 'このカメラは提供元のサイトでのみ視聴できます。',
+  'cctv.nohls': 'このブラウザーはページ内で映像を再生できません（HLS 非対応。Safari は対応）。提供元のサイトでご覧ください。',
+  'cctv.fail': '映像を取得できませんでした。提供元のサイトをお試しください。',
+  'cctv.credit': `映像：{owner}（提供元のサーバーから直接読み込み）。${APP_NAME} は映像を中継・保存せず、提供元とは提携していません。`,
+});
+Object.assign(DICT.id, {
+  'cctv.chip.aria': 'Tampilkan kamera lalu lintas (CCTV)',
+  'cctv.count': '{n} kamera lalu lintas di peta',
+  'cctv.loading': 'Memuat kamera…',
+  'cctv.gone': 'Kamera ini tidak ada di daftar.',
+  'cctv.owner': 'Pemilik: {owner}',
+  'cctv.open': 'Buka di situs pemilik',
+  'cctv.views': 'Sudut kamera',
+  'cctv.linkonly': 'Kamera ini hanya bisa ditonton di situs pemiliknya.',
+  'cctv.nohls': 'Browser ini tidak bisa memutar stream di dalam halaman (tanpa HLS bawaan; Safari bisa). Tonton di situs pemiliknya.',
+  'cctv.fail': 'Stream tidak menjawab di sini. Coba di situs pemiliknya.',
+  'cctv.credit': `Video: {owner}, dimuat langsung dari server pemilik. ${APP_NAME} tidak memproksi atau menyimpannya dan tidak berafiliasi dengan pemilik.`,
+});
+// (end of CCTV keys)
+
 // (end of other lanes' keys)
 
 // ------------------------------------------------------------------ language

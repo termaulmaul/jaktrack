@@ -188,6 +188,7 @@ function runningNow(ms = NOW()) {
 
 // ------------------------------------------------------------------ screens and history
 const KEYS = { station: 's', train: 't', line: 'l', route: 'route', bus: 'b' };
+KEYS.cctv = 'c';   // a traffic camera (cctv.js): #c=<id>
 const top = () => S.stack[S.stack.length - 1] || null;
 const screen = () => { const x = top(); return x ? { name: x.t, id: x.id } : { name: S.tab, id: null }; };
 const hashOf = () => {
@@ -290,6 +291,7 @@ function show({ detent = null } = {}) {
     }
     if (name !== 'route') closeRoute();
     if (name !== 'live') closeCov();
+    cctvFocus(name, id);
     if (name === 'station') ensureExits();
     exitsFocus(name, id);
     busFocus(name, id);
@@ -358,6 +360,7 @@ function ctx() {
     say,   // one polite announcement (a filter change, a result count); never per tick
     tj: S.busPack ? { on: !!S.busesOn, n: S.busesOn && S.buses?.on ? S.buses.stats().feed : null } : null,   // the home's TransJakarta row
     liveBus: !!S.busesOn, gsi: (() => { try { return S.city3d?.state?.()?.elev === 'elev2'; } catch { return false; } })(),   // credits for what is in use
+    cctv: S.cctv?.sources || null,   // credits name the camera owners once the camera pack is loaded
   };
 }
 /** A lane view: (fn exists) -> its HTML, else null (the page's own fallback renders). A throw is logged once. */
@@ -530,6 +533,7 @@ function render() {
   const m = S.model;
   const { name, id } = screen();
   if (name === 'about') { setView(aboutView()); return; }
+  if (name === 'cctv') { setView(cctvView(id)); return; }
   if (name === 'live') { if (!viewEl.querySelector('#tk-cov')) setView(covHost()); mountCov(); return; }
   if (name === 'route') { if (!viewEl.querySelector('#tk-route')) setView(routeHost()); mountRoute(id); return; }
   if (!m) {
@@ -989,6 +993,7 @@ $('#b-zout').addEventListener('click', () => S.tm?.zoomOut?.());
 $('#b-3d').addEventListener('click', () => toggle3D());
 $('#b-ug').addEventListener('click', () => toggleUnderground());
 $('#b-bus').addEventListener('click', () => toggleBuses());
+$('#b-cctv').addEventListener('click', () => toggleCctv());
 $('#map').addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; }, true);
 $('#map').addEventListener('click', (e) => mapTapFirst(e), true);   // capture on the container: before the trains layer's own
 
@@ -1351,6 +1356,45 @@ async function toggleBuses(want) {
     }
   } finally { S.busesBusy = false; }
 }
+// ------------------------------------------------------------------ traffic cameras (CCTV): cctv.js, optional pack
+// Off by default. The camera button in the control card loads the pack once and shows the pins UNDER the trains; a tap
+// on a pin opens the camera sheet (#c=<id>). Works under a playback clock too (the cameras are always "now").
+const cctvBtn = $('#b-cctv');
+async function toggleCctv(want) {
+  const on = want == null ? !S.cctvOn : !!want;
+  if (on === !!S.cctvOn) return;
+  S.cctvOn = on;
+  cctvBtn.setAttribute('aria-pressed', String(on));   // at once; the pack loads behind it
+  try {
+    if (on && !S.cctv) {
+      S.cctvP = S.cctvP || (async () => {
+        if (!gate.layers) await readyP;                // the pins go in UNDER the trains layer
+        const m = await need('cctv');
+        return m.mountCctv(S.map, { data: DATA, before: 'tokyo-trains', font: MAP_FONT, open: (type, id) => open(type, id),
+          onChange: () => { if (screen().name === 'cctv') render(); } });
+      })();
+      cctvBtn.setAttribute('aria-busy', 'true');
+      S.cctv = await S.cctvP;
+      if (S.cctvOn) say(t('cctv.count', { n: I.fmtNum(S.cctv.count) }));
+    }
+    S.cctv?.setOn(S.cctvOn);   // the newest wish (tapped again while the pack loaded)
+    if (S.cctvOn && screen().name === 'cctv') { S.cctv?.select(screen().id); render(); }
+  } catch (e) {
+    console.warn('[tokyo] cctv', e); S.errors.push(`cctv: ${e?.message || e}`);
+    S.cctvP = null; S.cctvOn = false; cctvBtn.setAttribute('aria-pressed', 'false');
+  } finally { cctvBtn.removeAttribute('aria-busy'); }
+  if (!S.cctvOn && screen().name === 'cctv') back();
+}
+/** The camera screen: ring + fly to the camera (a #c= link turns the pins on); elsewhere nothing is selected. */
+function cctvFocus(name, id) {
+  if (name === 'cctv' && !S.cctvOn) { toggleCctv(true); return; }
+  try { S.cctv?.select(name === 'cctv' ? id : null); } catch (e) { console.warn('[tokyo] cctv focus', e); }
+}
+function cctvView(id) {
+  if (!S.cctv) return `<div class="empty card"><b>${esc(t('cctv.loading'))}</b></div>`;
+  try { return S.cctv.view(id, { t, close: isDesktop() }); } catch (e) { console.warn('[tokyo] cctv view', e); return ''; }
+}
+
 /** The bus screen: select (ring, dim the other routes, route + stops) and fly to it; elsewhere nothing is selected. */
 function busFocus(name, id) {
   if (name === 'bus' && !S.busesOn) { if (gate.layers) toggleBuses(true); return; }   // a #b= link turns them on (cold: attachMapLayers)
@@ -1967,6 +2011,7 @@ $('#load-retry').addEventListener('click', () => location.reload());
     try { off = localStorage.getItem(BUS_KEY) === '0'; } catch { /* storage blocked */ }
     if (yes && !off) toggleBuses(true); else if (yes) render();   // on by default; the home row shows either way
   });   // the bus pack: npm run data:bus
+  if (HAS.cctv) hasPack('cctv-v1.json').then((yes) => { cctvBtn.hidden = !yes; });   // the camera pack: data-build/cctv.mjs
 }
 sheet.snap(S.stack.length ? 'half' : 'peek', { instant: true });
 show();

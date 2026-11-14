@@ -60,6 +60,7 @@ export const OPTIONAL = {
   nearby: { file: 'nearby.js' },                  // "Trains near me" on the home (opt-in location)
   buses: { file: 'buses/index.js' },              // Toei live buses (keyless ODPT GTFS-RT)
   coverage: { file: 'coverage.js' },              // "Live now" sheet (which lines are live), #live
+  cctv: { file: 'cctv.js' },                      // traffic cameras (optional pack cctv-v1.json)
 };
 const DISABLED = new Set((process.env.TOKYO_DISABLE || '').split(',').map((s) => s.trim()).filter(Boolean));
 // production builds leave the 2-line test fixture out: no packs = the error card, never fake data.

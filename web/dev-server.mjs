@@ -97,6 +97,15 @@ if (!SERVE_DIST) {
   }
 }
 
+/** Origins of the camera streams in the CCTV pack (cctv-v1.json `hosts`, written by data-build/cctv.mjs): only these
+ *  may be loaded as media. No pack = none. Read per page load: a rebuild of the data shows without a restart. */
+function cctvHosts() {
+  try {
+    const hosts = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'cctv-v1.json'), 'utf8')).hosts;
+    return Array.isArray(hosts) ? hosts.filter((h) => /^https:\/\/[a-z0-9.-]+(:\d+)?$/.test(h)) : [];
+  } catch { return []; }
+}
+
 function csp(req) {
   const host = req.headers.host || `127.0.0.1:${PORT}`;
   return [
@@ -105,6 +114,7 @@ function csp(req) {
     `connect-src 'self' blob: data: ws://${host}${REMOTE.length ? ` ${REMOTE.join(' ')}` : ''}`,
     "worker-src 'self' blob:",
     "img-src 'self' data: blob:",
+    `media-src 'self' blob:${cctvHosts().map((h) => ` ${h}`).join('')}`,   // CCTV: <video> plays HLS straight from the owners' servers
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self' data:",
     "object-src 'none'",

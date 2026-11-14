@@ -37,6 +37,7 @@ Sudah dicoba di browser dan berjalan:
 - **Peta 2D** dengan setiap kereta bergerak di relnya, berwarna sesuai jalur. Sekitar 60–85 kereta pada malam hari.
 - **Bus TransJakarta (simulasi dari jadwal)**: menyala secara bawaan bila data bus sudah dibangun; tombol bus di kartu kontrol peta mematikan atau menyalakannya, dan pilihan itu diingat browser. Beranda memuat baris TransJakarta dengan jumlah bus pada jam halaman (tidak dijumlahkan ke angka kereta). Tiap bus bergerak di sepanjang rutenya dan bisa diketuk untuk melihat rute, tujuan, dan halte berikutnya. Ini bukan posisi langsung; lihat [keterbatasannya](#bus-transjakarta-simulasi-bukan-posisi-langsung).
 - **Rute dan halte bus**: di tab Jalur ada bagian TransJakarta berisi 241 rute (koridor BRT lebih dulu) dengan headway saat ini dan saringan jenis layanan; saringan itu juga berlaku untuk bus di peta. Mengetuk rute menggambar rute, halte, dan busnya. Mengetuk halte (di peta pada zoom dekat, dari lembar rute, atau dari pencarian) membuka rute yang lewat beserta kedatangan berikutnya, berlabel "perkiraan dari jadwal". Pencarian menemukan rute dan halte bus.
+- **CCTV lalu lintas (opsional)**: tombol kamera di kartu kontrol peta menampilkan pin kamera. Ketuk pin untuk melihat nama, lokasi, pemilik, dan sudut kamera, dengan tautan "Buka di situs pemilik" sebagai aksi utama. Video diputar di dalam halaman hanya di browser yang memutar HLS sendiri; lihat [keterbatasannya](#cctv-opsional-dan-milik-pihak-lain).
 - **Daftar jalur** dan **ringkasan per operator**.
 - **Papan stasiun**: kereta berikutnya tiap arah, kereta pertama dan terakhir.
 - **Detail kereta**: semua pemberhentian, posisi sekarang, dan mode mengikuti kereta.
@@ -72,6 +73,8 @@ Tanpa langkah 1 dan 2, `bun run data` berhenti dengan pesan yang menyebut berkas
 
 `bun run data` menjalankan dua pembangun berurutan: kereta (`data-build/jakarta.mjs`), lalu bus (`data-build/bus.mjs`). Pembangun bus mengunduh GTFS (2,5 MB) sekali dan menyimpannya di `var/tmp/gtfs/`; `bun data-build/bus.mjs --fetch` mengunduh ulang. Bila unduhan gagal, data kereta tetap terbangun, perintah berakhir dengan kode galat dan pesan yang menyebut sebabnya, dan halaman berjalan tanpa tombol bus. Pembangun bus memakai perintah `unzip` sistem (macOS/Linux).
 
+Pembangun ketiga, `data-build/cctv.mjs`, berjalan paling akhir dan hanya mengubah berkas lokal (tidak mengunduh apa pun). Bila `var/src/trafik/asset-cctv-*.json` tidak ada, ia mencetak "CCTV dilewati" dan berakhir dengan kode 0; tombol kamera lalu tidak tampil.
+
 ## Data
 
 **Repo ini hanya berisi kode.** Berkas data tidak ikut di-commit (`var/` ada di `.gitignore`).
@@ -105,6 +108,24 @@ Tidak ada skrip unduh. Server trafik.live menolak klien selain browser (HTTP 403
 - Untuk jadwal KRL saja, Open-KRL menerbitkan GTFS-nya langsung dengan lisensi CC BY 4.0.
 - Atribusi tampil di halaman (Tentang → Data dan kredit) dan wajib dipertahankan.
 
+### CCTV lalu lintas (opsional)
+
+Sumber ketiga, juga berkas lokal: `asset-cctv-*.json` (±180 kB) yang dimuat halaman `trafik.live/cctv`, disimpan dengan cara yang sama ke `var/src/trafik/`. Isinya daftar kamera Jabodetabek (nama, koordinat, URL stream, dan halaman pemiliknya) yang dihimpun trafik.live; berkas itu tidak memuat pernyataan lisensi. Stream-nya sendiri milik instansi dan operator jalan tol yang tercantum di bagian `sources` berkas itu:
+
+| Kode | Pemilik menurut berkas | Halaman pemilik |
+|---|---|---|
+| `dki` | Pemprov DKI Jakarta | jakcctv.jakarta.go.id/publik |
+| `tol` | Badan usaha jalan tol (lewat BPJT Kementerian PU) | bpjt.pu.go.id/cctv |
+| `jm`, `jtd`, `cct` | Jasa Marga, Jakarta Tollroad Development, Cimanggis Cibitung Tollways | binamarga.pu.go.id, jtd.co.id, cct.co.id |
+| `bm` | Ditjen Bina Marga, Kementerian PU | binamarga.pu.go.id/cctv-non-tol |
+| `bks` | Pemkot Bekasi | bekasikota.go.id/cctv |
+| `bgr` | Pemkot Bogor | bsw.kotabogor.go.id/cctv |
+| `tgr` | DPUPR Kota Tangerang (SIPANTAU) | sipantau.dpuprkotang.info |
+| `dpk` | Dishub Kota Depok | dishub.depok.go.id/cctv |
+| `pkn` | Pakuan Network (YouTube) | youtube.com/@PakuanNetwork |
+
+Karena itu berkas sumber dan hasil bangunnya (`var/static/tokyo/cctv-v1.json`) hanya ada di `var/` dan tidak di-commit; repo hanya berisi kode pengubahnya. Batasan pakai di atas berlaku juga untuk berkas ini, dan syarat pakai tiap pemilik kamera **belum dicek**: minta izin sebelum menayangkan lapisan ini untuk umum.
+
 ### Hasil bangun
 
 `bun run data` menghasilkan, dari berkas bertanggal bangun 12 Oktober 2026:
@@ -122,6 +143,16 @@ Dari GTFS TransJakarta yang diperbarui 13 November 2026, pembangun bus (±1,5 de
 | Rute | 241 |
 | Pola trip (masing-masing dengan bentuk rute dan frekuensinya) | 694 |
 | Halte | 7.875 |
+
+Dari berkas CCTV yang diperiksa penyusunnya 13 November 2026, `cctv-v1.json` (176 kB):
+
+| | Jumlah |
+|---|---|
+| Kamera | 478: tol 365, Bogor 39, Tangerang 25, DKI 21, Bekasi 21, Pakuan Network 4, Bina Marga 3 |
+| Sudut kamera | 594: 564 dengan stream HLS, 30 tautan saja (Tangerang dan YouTube) |
+| Host stream (masuk ke CSP) | 19 |
+
+Delapan kamera yang ditandai mati di berkas sumber (semuanya Dishub Depok) tidak ikut dibangun.
 
 Angka ini berubah bila berkas sumbernya diperbarui.
 
@@ -222,6 +253,17 @@ Bus di peta dihitung dari jadwal GTFS, bukan dari GPS armada. Semua teks bus di 
 - **Pemutaran ulang waktu** berlaku juga untuk bus: bus mengikuti jam halaman, termasuk saat dipercepat. Jejak di belakang bus dimatikan selama pemutaran dipercepat.
 - **Kinerja**: pada 5.867 bus, peta berjalan 60 fps di Chromium pada Apple M5 (seluruh Jakarta dan tampilan dekat). Belum diukur di ponsel.
 - **Kredit bus** di Tentang → Data dan kredit hanya tampil selama lapisan bus menyala; lembar tiap bus selalu memuatnya.
+
+### CCTV: opsional dan milik pihak lain
+
+- **Video bukan milik jaktrack.** Halaman memuatnya langsung dari server pemilik saat kamera dibuka: tidak diproksi, tidak direkam, tidak disimpan. Tautan "Buka di situs pemilik" selalu ada dan menjadi aksi utama.
+- **Pemutaran di dalam halaman hanya dengan HLS bawaan browser** (`video.canPlayType('application/vnd.apple.mpegurl')`), tanpa pustaka pemutar. Itu berarti Safari dan iOS, serta Chromium yang sudah membawa HLS sendiri. Di browser lain panel hanya berisi penjelasan dan tautan pemilik.
+- **Tidak semua stream menjawab.** Uji 15 November 2026, satu permintaan ke masing-masing dari lima kamera: empat membalas daftar putar (DKI, tol lewat `pub2.hk-opt.com`, Bekasi, Bogor); `jmlive.jasamarga.com` membalas 200 dengan isi kosong. Host itu melayani 195 dari 564 sudut HLS. Sisanya tidak diuji. Stream yang gagal diganti teks "Stream tidak menjawab" di panel.
+- **YouTube dan kamera Tangerang hanya tautan**: sumbernya halaman sematan, bukan HLS, dan halaman ini tidak memakai `<iframe>`.
+- **CSP dev server berubah**: `web/dev-server.mjs` menambahkan `media-src 'self' blob:` ditambah 19 origin stream yang dibaca dari `cctv-v1.json` (bukan wildcard). Tanpa berkas itu, `media-src` hanya `'self' blob:`. Bila ruas video suatu stream ternyata dilayani host lain daripada daftar putarnya, CSP akan menolaknya; itu belum teramati. Server produksi harus mengirim CSP yang sama sendiri.
+- **Pin memakai koordinat dari berkas sumber** apa adanya; ketepatannya tidak diperiksa. Kamera di luar kotak Jabodetabek dibuang pembangun.
+- **Pin dikelompokkan** sampai zoom 13 dan disembunyikan di bawah zoom 9. Di kota 3D dan tampilan bawah tanah pin tetap digambar datar di permukaan.
+- **Kredit CCTV** di Tentang → Data dan kredit tampil setelah lapisan kamera pernah dinyalakan; panel tiap kamera selalu menyebut pemiliknya.
 
 ## Riset trafik.live
 
