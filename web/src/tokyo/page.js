@@ -463,7 +463,8 @@ function closeCov() {
  *  once the map and the data are up; the sheet re-renders when the module and when the exits data are in. */
 function ensureExits() {
   if (!HAS.exits) return;
-  if (!S.exitsP) S.exitsP = need('exits').then(() => { mountExitsLayer(); viewEl.__html = ''; render(); });
+  // optional pack (not built for Jakarta): without it the module is not loaded at all, so no 404 in the console
+  if (!S.exitsP) S.exitsP = hasPack('exits-v1.json').then((ok) => (ok ? need('exits').then(() => { mountExitsLayer(); viewEl.__html = ''; render(); }) : null));
   mountExitsLayer();
 }
 function mountExitsLayer() {
@@ -1709,6 +1710,7 @@ async function moreNames() {
   try {
     const ptr = await getJSON(`${DATA}/network-latest.json`).catch(() => null);
     const file = (ptr?.file || 'network-v1.json').replace(/\.json$/, '-names.json');
+    if (!await hasPack(file)) return;   // optional side file (not built for Jakarta): no fetch, no 404 in the console
     net.mergeNames(S.model, await getJSON(`${DATA}/${file}${ptr?.hash ? `?h=${ptr.hash}` : ''}`));
     S.namesMerged = true;
     S.searchObj = loaded.search.createSearch(S.model, null);
