@@ -437,8 +437,10 @@ export function lineRhythm(m, line, ms = Date.now()) {
 }
 
 /** The home chips: JR, Tokyo Metro, Toei, the private railways. */
-export const CHIPS = ['jr', 'metro', 'toei', 'private'];
-export const chipOf = (opId) => (/^JR-/.test(opId) ? 'jr' : opId === 'TokyoMetro' ? 'metro' : opId === 'Toei' ? 'toei' : 'private');
+// Kelompok saringan = operator di data Jakarta (id operator dari data-build/jakarta.mjs). Operator yang tidak dikenal masuk 'other'.
+const CHIP_BY_OP = { 'KAI-Commuter': 'krl', KAI: 'kai', 'MRT-Jakarta': 'mrt', 'LRT-Jabodebek': 'jbdb', 'LRT-Jakarta': 'lrtj' };
+export const CHIPS = ['krl', 'kai', 'mrt', 'jbdb', 'lrtj', 'other'];
+export const chipOf = (opId) => CHIP_BY_OP[opId] || 'other';
 
 /**
  * Trains running now (as drawn on the map) per operator: {total, ops: [{op (operator id), title, n, lines: [{line,
@@ -458,7 +460,7 @@ export function runningByOperator(m, ms = Date.now()) {
   const list = [...ops.values()];
   for (const o of list) o.lines.sort((a, b) => b.n - a.n || a.line - b.line);
   list.sort((a, b) => opRank(a.op) - opRank(b.op) || b.n - a.n || a.op.localeCompare(b.op));
-  const by = { jr: 0, metro: 0, toei: 0, private: 0 };
+  const by = Object.fromEntries(CHIPS.map((k) => [k, 0]));
   for (const o of list) by[chipOf(o.op)] += o.n;
   return { total: list.reduce((n, o) => n + o.n, 0), ops: list, by, byLine };
 }

@@ -504,7 +504,9 @@ export function addNetwork(map, net, opts = {}) {
 
   // names (station names over trains): singles, complexes below Z_SPLIT, complex names from Z_SPLIT
   const textField = () => (lang === 'ja' ? ['get', 'ja']
-    : ['step', ['zoom'], ['get', 'en'], 16, ['format', ['get', 'en'], {}, '\n', {}, ['get', 'ja'], { 'font-scale': 0.8, 'text-color': REST.nameQuiet }]]);
+    // baris kedua (nama dalam aksara lain) hanya bila berbeda: data Jakarta punya satu nama, dan nama ganda terbaca seperti bayangan
+    : ['step', ['zoom'], ['get', 'en'], 16, ['case', ['==', ['get', 'en'], ['get', 'ja']], ['get', 'en'],
+      ['format', ['get', 'en'], {}, '\n', {}, ['get', 'ja'], { 'font-scale': 0.8, 'text-color': REST.nameQuiet }]]]);
   // kana and kanji (drawn by the browser) read smaller than Latin at the same size: JA one px up
   const textSize = () => ['interpolate', ['linear'], ['zoom'], 10, ['+', ['get', 'sz'], lang === 'ja' ? 1 : 0], 16, ['+', ['get', 'sz'], lang === 'ja' ? 2.5 : 1.5]];
   const nameLayout = (filter, far = 1) => ({

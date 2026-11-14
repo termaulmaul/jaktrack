@@ -150,7 +150,8 @@ Nama `tokyo` pada folder, berkas, dan jenis berkas data (`tokyo-network`) adalah
 
 ## Yang belum disesuaikan
 
-- **Sisa Tokyo di antarmuka.** Kelompok operator "JR / Metro / Toei / Swasta", penjelasan jenis kereta Jepang di halaman Tentang, dan teks bahasa Jepang.
+- **Sisa Tokyo di antarmuka.** Penjelasan jenis kereta Jepang di halaman Tentang dan teks bahasa Jepang.
+- **Kereta 3D digambar di garis tengah rel**, jadi dua kereta yang berpapasan bertumpuk sesaat. Sumber datanya tidak memuat jalur ganda.
 - **Jalur bercabang tampil sebagai beberapa jalur**, dan jalur yang berbagi rel digambar bertumpuk.
 - **Hari libur nasional belum ada.** Hanya Sabtu dan Minggu yang memakai jadwal akhir pekan. Jadwal KRL hari Sabtu memakai tangkapan hari Minggu, karena sumbernya tidak punya tangkapan Sabtu.
 - **Ketinggian rel dan kedalaman terowongan** memakai perkiraan bawaan, bukan data OpenStreetMap.

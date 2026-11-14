@@ -690,7 +690,7 @@ function writeOpg(k) {
 }
 function opChips(r, where, ctx = null) {
   const sel = where === 'lines' ? readOpg() : null;
-  const keys = where === 'lines' ? CHIPS : CHIPS.filter((k) => r.by[k]);
+  const keys = where === 'lines' ? CHIPS.filter((k) => k !== 'other' || r.by[k]) : CHIPS.filter((k) => r.by[k]);
   const c = (k, label, n) => `<button type="button" class="chip" data-opgrp="${k}"${where === 'home' ? ' data-tab="lines"' : ` aria-pressed="${(sel || 'all') === k}"`}>${esc(label)} <b>${esc(fmtNum(n || 0))}</b></button>`;
   return `<div class="chips kr-chips tb-opchips" role="group" aria-label="${esc(t('board.chips'))}">${where === 'home' ? liveChip(ctx) : ''}${c('all', t('board.lines.all'), r.total)}${keys.map((k) => c(k, t(`board.chip.${k}`), r.by[k])).join('')}</div>`;
 }

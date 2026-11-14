@@ -40,7 +40,9 @@ import { createTrainsetGL, carSpec, carPitch, lodFor, pxPerMetre, nightFactor, e
 import { boreIndex, eyeIn } from './boreeye.js';   // the free camera's eye among the bores
 
 export const TRAINS3D_ID = 'tk3d-trains';
-export const CAR_L = 19.5, CAR_GAP = 0.8, CAR_W = 2.95, CAR_H = 3.7, LIFT = 0.4, LEFT_M = 1.9;
+// LEFT_M 0: data Jakarta hanya punya garis tengah rel (tanpa jalur ganda), jadi kereta digambar tepat di atas garis rutenya.
+// Dengan 1,9 m (nilai asal) garis rute yang dipilih tampak sebagai bayangan di samping kereta. Kereta berpapasan jadi bertumpuk sesaat.
+export const CAR_L = 19.5, CAR_GAP = 0.8, CAR_W = 2.95, CAR_H = 3.7, LIFT = 0.4, LEFT_M = 0;
 export const MIN_W_PX = 7, K_MAX = 8, HEIGHT_GAIN = 0.6;
 export const UNDER_M = -2;                 // a car this far below ground is underground
 export const OVER_M = 1, OVER_LIFT = 0.45;  // track this far up gets its line's colour along the deck top, a little above it
