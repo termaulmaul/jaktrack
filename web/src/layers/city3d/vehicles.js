@@ -460,7 +460,10 @@ export function createTrains3d(opts) {
         // (d): the ridden train is always a solid, real train (out in the open too: a ghost box there was the
         // "flat grey world"); "open" = not under the street (above ground, or an open-air deck between two portals)
         const ridden = ride != null && (tr.id === ride || tr.run?.key === ride);
-        const faint = under ? !isUnder && !ridden : isUnder;
+        // jaktrack: the open train is never a ghost either (it was a flat box in its accent colour: an MRT train followed
+        // through its tunnel in the surface view, or on its viaduct in the underground view, turned into a plain blue slab)
+        const sel = selected != null && (tr.id === selected || tr.run?.key === selected) ? 4 : 0;
+        const faint = !ridden && !sel && (under ? !isUnder : isUnder);
         tr.open = !(hMid < UNDER_M) || !!R2?.inOpen(tr.line, mid / k);
         const live = !faint && !!tr.live;
         if (pass !== (faint ? 2 : live ? 0 : 1)) continue;
@@ -468,10 +471,9 @@ export function createTrains3d(opts) {
         if (pass === 0) { nl += n; liveTrains++; }
         if (isUnder) nu++;
         const alpha = faint ? (under ? FAINT_SURFACE_UG : FAINT_UNDER) : 1;
-        // { body: '#hex', band: '#hex' | null } from trains.js's look, else the line's colour; the underground view's
-        // subway trains always wear their line's full colour (the 2D trainsets mute them; this view is about them)
-        const look = under && !faint ? null : tr.look || null;
-        const sel = selected != null && (tr.id === selected || tr.run?.key === selected) ? 4 : 0;
+        // { body: '#hex', band: '#hex' | null } from trains.js's look, else the line's colour. jaktrack: the same look
+        // above and below ground (the Tokyo original dropped it in the underground view and used the plain line colour)
+        const look = tr.look || null;
         // a faint train is a neutral grey ghost (the network's rest grey), never its line colour faded: official line
         // colours are shown exact or not at all; the picked train keeps its colour, solid
         const ghost = faint && !sel;

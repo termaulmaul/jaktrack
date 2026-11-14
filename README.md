@@ -156,7 +156,8 @@ Nama `tokyo` pada folder, berkas, dan jenis berkas data (`tokyo-network`) adalah
 - **Jalur bercabang tampil sebagai beberapa jalur**, dan jalur yang berbagi rel digambar bertumpuk.
 - **Hari libur nasional belum ada.** Hanya Sabtu dan Minggu yang memakai jadwal akhir pekan. Jadwal KRL hari Sabtu memakai tangkapan hari Minggu, karena sumbernya tidak punya tangkapan Sabtu.
 - **Ruas bawah tanah ditandai dengan tangan**, bukan dari sumber data: enam stasiun MRT dari Senayan sampai Bundaran HI (`UNDERGROUND` di `data-build/jakarta.mjs`).
-- **Kedalaman terowongan adalah perkiraan bawaan**: 18 m di semua stasiun, digambar 5× lebih dalam, dengan satu kotak terowongan mengikuti garis tengah rel. Kedalaman asli tiap stasiun, dua tabung terpisah, dan letak mulut terowongan di antara ASEAN dan Senayan tidak ada di data.
+- **Kedalaman terowongan adalah perkiraan bawaan**: 18 m di semua stasiun, digambar 5× lebih dalam. Kedalaman asli tiap stasiun dan letak mulut terowongan di antara ASEAN dan Senayan tidak ada di data.
+- **Bentuk terowongan MRT adalah asumsi**: dua tabung perisai kembar di antara stasiun dan kotak di stasiun, dengan ukuran bawaan kode asal. Kedua tabung mengikuti garis tengah rel yang sama dengan jarak tetap, bukan trase asli tiap rel dari OpenStreetMap, dan baru terbaca sebagai dua tabung dari dekat (zoom 18 ke atas atau "Ikut di terowongan").
 - **Ruas layang digambar di permukaan tanah**: MRT Lebak Bulus–ASEAN dan kedua LRT belum punya data ketinggian.
 - **Stasiun bernama sama dengan id berbeda** (misalnya Dukuh Atas MRT dan LRT) belum digabung menjadi satu titik pindah.
 - **Daftar "Pilih stasiunmu"** memakai id yang bergantung pada urutan jalur hasil bangun, jadi bisa bergeser bila data berubah.

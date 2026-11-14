@@ -57,7 +57,9 @@ export const TYPE = {
   'TokyoMetro.Fukutoshin': 'shield2', 'JR-East.SobuRapid': 'shield2', 'JR-East.Yokosuka': 'shield2', 'JR-East.Keiyo': 'shield2',
   'TWR.Rinkai': 'shield1', 'MIR.TsukubaExpress': 'shield1',
 };
-const typeOf = (id, depth) => TYPE[id] || (depth > -12 ? 'box' : 'shield2');
+// jaktrack, asumsi (pengetahuan umum, bukan dari data): terowongan MRT Jakarta fase 1 adalah dua tabung bor (TBM) di antara
+// stasiun, dengan stasiun cut-and-cover. Ditulis eksplisit agar tidak bergantung pada tebakan kedalaman di bawah ini.
+const typeOf = (id, depth) => TYPE[id] || (String(id).startsWith('mrt.') ? 'shield2' : depth > -12 ? 'box' : 'shield2');
 /** The shape for a key: SHAPES[name], resized by '@size' (a bore's diameter, a box's width; elev-v2 sections). */
 export function parseShape(key) {
   const [name, sz] = String(key || 'box').split('@');
