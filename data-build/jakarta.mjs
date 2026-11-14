@@ -62,9 +62,10 @@ function route(net, a, b) {                              // Dijkstra sederhana; 
   return found;
 }
 const netOf = system => (system === 'kai' ? 'kai' : '');
-// Asumsi (pengetahuan umum, bukan dari berkas sumber): di Jabodetabek hanya MRT Lin Utara-Selatan yang punya ruas bawah
-// tanah, yaitu Senayan sampai Bundaran HI. Lebak Bulus–ASEAN layang; KRL, kedua LRT, dan KA antarkota tidak di bawah tanah.
-// Kedalaman tidak ada di sini: kode web memakai perkiraan bawaannya (DEPTH_M di web/src/layers/city3d/elevation.js).
+// Stasiun bawah tanah (bukan dari berkas sumber): enam stasiun MRT Lin Utara-Selatan, Senayan sampai Bundaran HI.
+// Sumber dan pemeriksaan silang dengan tag tunnel OpenStreetMap: docs/ELEVASI.md. Tanda ini dipakai untuk kotak stasiun
+// dan tombol "Lihat di bawah tanah"; tinggi rel per ruas (layang / terowongan) dibangun data-build/elev.mjs, yang
+// mencetak PERIKSA bila tanda di sini tidak cocok dengan terowongan menurut OSM.
 const UNDERGROUND = new Set(['MRT-SNY', 'MRT-IST', 'MRT-BNH', 'MRT-STB', 'MRT-DKA', 'MRT-BHI']);
 
 // ---- kereta: urutan simpul penuh + halte berhenti ----

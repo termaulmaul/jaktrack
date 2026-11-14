@@ -178,6 +178,7 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
       map: 'Map',
       mapText: BASEMAP === 'protomaps' ? 'Map data © OpenStreetMap contributors, under the Open Database License. Basemap tiles from Protomaps, drawn with MapLibre.'
         : 'Map data © OpenStreetMap contributors, under the Open Database License. Basemap tiles: OpenFreeMap © OpenMapTiles. Drawn with MapLibre.',
+      elevText: 'Track heights (viaducts and tunnels in 3D): derived from the bridge, tunnel and layer tags of railway ways \u00a9 OpenStreetMap contributors, ODbL. Heights in metres are estimates.',
       gsi: 'Ground heights',   // the 3D tunnel depths (elev-v2, npm run data:3d) use GSI elevation tiles
       gsiText: 'Ground heights: Geospatial Information Authority of Japan (GSI) elevation tiles, processed (used for the underground view\u2019s tunnel depths).',
       na: 'Not affiliated',
@@ -198,6 +199,7 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
       map: '地図',
       mapText: BASEMAP === 'protomaps' ? '地図データ © OpenStreetMap contributors（Open Database License）。背景地図タイルは Protomaps、描画は MapLibre を利用しています。'
         : '地図データ © OpenStreetMap contributors（Open Database License）。背景地図タイルは OpenFreeMap © OpenMapTiles、描画は MapLibre を利用しています。',
+      elevText: 'Track heights (viaducts and tunnels in 3D): derived from the bridge, tunnel and layer tags of railway ways \u00a9 OpenStreetMap contributors, ODbL. Heights in metres are estimates.',
       gsi: '標高',
       gsiText: '出典：国土地理院（地理院タイル 標高タイル DEM5A・DEM5B・DEM10B）を加工して作成（地下表示のトンネルの深さに利用）',
       na: '提携関係',
@@ -218,6 +220,7 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
       map: 'Peta',
       mapText: BASEMAP === 'protomaps' ? 'Data peta © kontributor OpenStreetMap, dengan Open Database License. Peta dasar dari Protomaps, digambar dengan MapLibre.'
         : 'Data peta © kontributor OpenStreetMap, dengan Open Database License. Ubin peta dasar: OpenFreeMap © OpenMapTiles. Digambar dengan MapLibre.',
+      elevText: 'Ketinggian rel (viaduk dan terowongan di 3D): diturunkan dari tag bridge, tunnel, dan layer pada way rel \u00a9 kontributor OpenStreetMap, ODbL. Angka meternya perkiraan.',
       gsi: 'Ketinggian tanah',
       gsiText: 'Ketinggian tanah: ubin elevasi Geospatial Information Authority of Japan (GSI), diolah (dipakai untuk kedalaman terowongan di tampilan bawah tanah).',
       na: 'Afiliasi',
@@ -233,7 +236,7 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
     { key: 'mt3d', head: T.mt3d, lines: [T.mt3dText], links: [{ href: 'https://github.com/open-krl/pipeline', label: 'github.com/open-krl/pipeline' }, { href: 'https://trafik.live/kereta', label: 'trafik.live/kereta' }, { href: 'https://github.com/lucacadalora/tokyo-rail-twin', label: 'github.com/lucacadalora/tokyo-rail-twin' }, { href: URLS.mt3d, label: 'github.com/nagix/mini-tokyo-3d' }] },
     ...(opts?.bus || opts?.liveBus ? [{ key: 'toeiBus', head: T.toeiBus, lines: [T.busText], links: [{ href: 'https://gtfs.transjakarta.co.id/', label: 'gtfs.transjakarta.co.id' }] }] : []),
     ...BUS_CREDITS.map((b) => ({ key: b.key, head: L === 'ja' ? b.head.ja : b.head.en, lines: [ccCredit(L, b.by, b.sets)], links: [] })),
-    { key: 'map', head: T.map, lines: [T.mapText], links: [{ href: URLS.osm, label: 'openstreetmap.org/copyright' },
+    { key: 'map', head: T.map, lines: [T.mapText, ...(opts?.elev ?? globalThis.__tokyo?.state?.elev ? [T.elevText] : [])], links: [{ href: URLS.osm, label: 'openstreetmap.org/copyright' },
       ...(BASEMAP === 'protomaps' ? [{ href: URLS.protomaps, label: 'protomaps.com' }] : [{ href: URLS.openfreemap, label: 'openfreemap.org' }, { href: URLS.openmaptiles, label: 'openmaptiles.org' }]),
       { href: URLS.maplibre, label: 'maplibre.org' }] },
     ...(opts?.gsi ? [{ key: 'gsi', head: T.gsi, lines: [T.gsiText], links: [{ href: 'https://maps.gsi.go.jp/development/ichiran.html', label: 'maps.gsi.go.jp' }] }] : []),
