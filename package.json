@@ -5,6 +5,7 @@
   "scripts": {
     "data": "bun data-build/jakarta.mjs && bun data-build/elev.mjs && bun data-build/bus.mjs && bun data-build/cctv.mjs",
     "dev": "bun web/dev-server.mjs",
+    "dev:https": "HTTPS=1 bun web/dev-server.mjs",
     "build": "bun web/build.mjs",
     "test": "bun test data-build"
   },

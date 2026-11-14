@@ -911,7 +911,7 @@ function nearest(lng, lat, n = 4) {
 function locate() {
   const btn = $('#b-locate');
   // jaktrack: over plain http on a LAN address the browser refuses the location without asking; say why, honestly
-  if (window.isSecureContext === false) { S.nearState = { st: 'fail' }; toast(t('loc.insecure')); render(); return; }
+  if (window.isSecureContext === false) { S.nearState = { st: 'fail' }; toast(`${t('loc.insecure')} ${t('loc.https')}`); render(); return; }
   if (!navigator.geolocation) { S.nearState = { st: 'fail' }; toast(t('loc.none')); render(); return; }
   btn.setAttribute('aria-busy', 'true');
   if (S.nearState?.st !== 'ok') { S.nearState = { st: 'wait' }; if (S.tab === 'stations' && !S.stack.length) render(); }

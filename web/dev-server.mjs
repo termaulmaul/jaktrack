@@ -11,7 +11,12 @@
 // Sends a CSP like a production server should, so CSP problems show up in dev. A failed rebuild keeps serving the LAST
 // GOOD build; the error is logged and shown at /__dev/error.
 //
-// Env: PORT (4776), HOST (127.0.0.1), DATA_DIR (var/static/tokyo), LIVE_UPSTREAM (http://127.0.0.1:4777),
+// HTTPS=1 or --https (`bun run dev:https`): the same server over https on every interface, so a phone on the same Wi-Fi gets
+// a secure context (the browser only shares a location over https or on localhost). A self-signed certificate is made
+// once with the system's `openssl` into var/tls/ (never committed) and remade when the machine's LAN address changes.
+// docs/LOKASI.md.
+//
+// Env: PORT (4776), HOST (127.0.0.1; 0.0.0.0 with HTTPS), HTTPS, DATA_DIR (var/static/tokyo), LIVE_UPSTREAM (http://127.0.0.1:4777),
 //      TILES_UPSTREAM, GLYPHS_DIR, the page settings of web/src/tokyo/config.js (BASEMAP, ...), TOKYO_DISABLE=layer,city3d
 //      (leaves those modules out of the bundle). `--dist` (npm run serve) serves web/dist (npm run build) instead.
 
@@ -19,11 +24,16 @@ import * as esbuild from 'esbuild';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import http from 'node:http';
+import https from 'node:https';
+import os from 'node:os';
+import { spawnSync } from 'node:child_process';
+import { X509Certificate } from 'node:crypto';
 import path from 'node:path';
 import { ROOT, TEMPLATE, RENDERED_PUBLIC, assetsFromMetafile, esbuildOptions, renderPage, renderManifest, remoteOrigins, verdicts } from './build.mjs';
 
 const PORT = Number(process.env.PORT || 4776);
-const HOST = process.env.HOST || '127.0.0.1';
+const HTTPS = process.env.HTTPS === '1' || process.argv.includes('--https');
+const HOST = process.env.HOST || (HTTPS ? '0.0.0.0' : '127.0.0.1');
 const TILES = process.env.TILES_UPSTREAM ? new URL(process.env.TILES_UPSTREAM) : null;
 const LIVE = new URL(process.env.LIVE_UPSTREAM || 'http://127.0.0.1:4777');
 const DATA_DIR = path.resolve(process.env.DATA_DIR || path.join(ROOT, '..', 'var', 'static', 'tokyo'));
@@ -39,6 +49,34 @@ const TYPES = {
   '.woff2': 'font/woff2', '.woff': 'font/woff', '.txt': 'text/plain; charset=utf-8', '.pbf': 'application/x-protobuf',
   '.map': 'application/json', '.bin': 'application/octet-stream', '.glb': 'model/gltf-binary', '.mvt': 'application/vnd.mapbox-vector-tile',
 };
+
+// ------------------------------------------------------------------ https (opt-in): a self-signed certificate for this machine
+const lanIps = () => Object.values(os.networkInterfaces()).flat().filter((a) => a && a.family === 'IPv4' && !a.internal).map((a) => a.address);
+/** { key, cert } from var/tls/, made with openssl when missing, about to expire, or not naming one of this machine's addresses. */
+function devCert() {
+  const dir = path.join(ROOT, '..', 'var', 'tls');
+  const keyFile = path.join(dir, 'dev-key.pem'), certFile = path.join(dir, 'dev-cert.pem');
+  const sans = ['DNS:localhost', 'IP:127.0.0.1', ...lanIps().map((ip) => `IP:${ip}`)];
+  try {
+    const x = new X509Certificate(fs.readFileSync(certFile));
+    const have = x.subjectAltName || '';
+    const covers = sans.every((n) => have.split(', ').includes(n.replace(/^IP:/, 'IP Address:')));
+    if (covers && Date.parse(x.validTo) - Date.now() > 7 * 864e5) return { key: fs.readFileSync(keyFile), cert: fs.readFileSync(certFile) };
+  } catch { /* none yet, or unreadable: make one */ }
+  fs.mkdirSync(dir, { recursive: true });
+  const r = spawnSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-sha256', '-days', '365', '-subj', '/CN=jaktrack dev',
+    '-addext', `subjectAltName=${sans.join(',')}`, '-addext', 'extendedKeyUsage=serverAuth', '-keyout', keyFile, '-out', certFile], { encoding: 'utf8' });
+  if (r.error || r.status !== 0) {
+    console.error(r.error?.code === 'ENOENT'
+      ? '[dev] HTTPS=1 needs the `openssl` command to make a certificate, and it is not installed (not on PATH). Install OpenSSL, or run without HTTPS.'
+      : `[dev] openssl could not make the certificate:\n${r.error?.message || r.stderr}`);
+    process.exit(1);
+  }
+  fs.chmodSync(keyFile, 0o600);
+  console.log(`[dev] made a self-signed certificate for ${sans.join(', ')} (${path.relative(process.cwd(), certFile)})`);
+  return { key: fs.readFileSync(keyFile), cert: fs.readFileSync(certFile) };
+}
+const TLS = HTTPS ? devCert() : null;
 
 // ------------------------------------------------------------------ in-memory build with watch (last good build kept)
 let outputs = new Map();   // '/assets/name' -> Uint8Array
@@ -111,7 +149,7 @@ function csp(req) {
   return [
     "default-src 'self'",
     "script-src 'self'",
-    `connect-src 'self' blob: data: ws://${host}${REMOTE.length ? ` ${REMOTE.join(' ')}` : ''}`,
+    `connect-src 'self' blob: data: ${TLS ? 'wss' : 'ws'}://${host}${REMOTE.length ? ` ${REMOTE.join(' ')}` : ''}`,
     "worker-src 'self' blob:",
     "img-src 'self' data: blob:",
     `media-src 'self' blob:${cctvHosts().map((h) => ` ${h}`).join('')}`,   // CCTV: <video> plays HLS straight from the owners' servers
@@ -190,7 +228,7 @@ function safeJoin(base, rel) {
 // Live reload; ?noreload (screenshots, tests) keeps the page still while files change.
 const RELOAD_JS = "if (!/[?&]noreload/.test(location.search)) new EventSource('/__dev/events').addEventListener('reload', () => location.reload());\n";
 
-const server = http.createServer(async (req, res) => {
+const server = (TLS ? https.createServer.bind(https, TLS) : http.createServer)(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   const p = url.pathname;
   res.setHeader('x-robots-tag', 'noindex');
@@ -253,7 +291,10 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   const haveData = fs.existsSync(path.join(DATA_DIR, 'tt-latest.json')) && fs.existsSync(path.join(DATA_DIR, 'network-latest.json'));
-  console.log(`[dev] open http://${HOST}:${PORT}/${SERVE_DIST ? '  (serving web/dist)' : ''}`);
+  const wild = HOST === '0.0.0.0' || HOST === '::';
+  const hosts = TLS && wild ? ['localhost', ...lanIps()] : [HOST];
+  for (const h of hosts) console.log(`[dev] open ${TLS ? 'https' : 'http'}://${h}:${PORT}/${SERVE_DIST ? '  (serving web/dist)' : ''}`);
+  if (TLS) console.log('[dev] self-signed certificate: the browser warns once per device; choose "Advanced" -> "Proceed" (docs/LOKASI.md)');
   console.log(`[dev] data ${path.relative(process.cwd(), DATA_DIR) || DATA_DIR}${haveData ? '' : '  (EMPTY: run `npm run data` first)'}  live -> ${LIVE.origin}${TILES ? `  tiles -> ${TILES.origin}` : ''}${REMOTE.length ? `  basemap: ${REMOTE.join(', ')}` : ''}`);
 });
 for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => process.exit(0));
