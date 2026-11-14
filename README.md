@@ -7,12 +7,12 @@ Riset untuk pelacak transportasi umum Jakarta: bus TransJakarta, kereta (KRL, MR
 
 ## Menjalankan
 
-Butuh Node.js 20 ke atas, Python 3, dan perintah `unzip`.
+Butuh [Bun](https://bun.sh) dan perintah `unzip`.
 
 ```bash
-npm run data   # unduh GTFS resmi TransJakarta (2,5 MB), bangun web/data/jakarta.json
-npm run dev    # buka http://127.0.0.1:4777
-npm test       # uji modul simulasi
+bun run data   # unduh GTFS resmi TransJakarta (2,5 MB), bangun web/data/jakarta.json
+bun run dev    # buka http://127.0.0.1:4777
+bun test       # uji modul simulasi
 ```
 
 Repo ini hanya berisi kode. Data dibangun di mesin sendiri dari sumber resminya dan tidak ikut di-commit.

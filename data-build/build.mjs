@@ -1,5 +1,5 @@
 // Mengunduh GTFS resmi TransJakarta dan membuat web/data/jakarta.json untuk simulasi di browser.
-// Pakai: node data-build/build.mjs [--fetch]   (--fetch mengunduh ulang walau salinan sudah ada)
+// Pakai: bun data-build/build.mjs [--fetch]   (--fetch mengunduh ulang walau salinan sudah ada)
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { meters } from '../web/sim.js';

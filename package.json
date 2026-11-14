@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "data": "node data-build/build.mjs",
-    "dev": "python3 -m http.server 4777 --bind 127.0.0.1 --directory web",
-    "test": "node --test web/sim.test.mjs"
+    "data": "bun data-build/build.mjs",
+    "dev": "bun dev.mjs",
+    "test": "bun test"
   }
 }

@@ -13,7 +13,7 @@ map.addControl(new maplibregl.NavigationControl(), 'bottom-right');
 
 try {
   const res = await fetch('data/jakarta.json');
-  if (!res.ok) throw new Error(`data/jakarta.json: HTTP ${res.status}. Jalankan "npm run data" dulu.`);
+  if (!res.ok) throw new Error(`data/jakarta.json: HTTP ${res.status}. Jalankan "bun run data" dulu.`);
   const pack = await res.json();
   const trips = prepare(pack);
   if (!map.loaded()) await map.once('load');
