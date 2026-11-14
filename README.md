@@ -35,6 +35,7 @@ Diambil 14 November 2026 sekitar pukul 22.55 WIB dari server dev lokal, dalam ba
 Sudah dicoba di browser dan berjalan:
 
 - **Peta 2D** dengan setiap kereta bergerak di relnya, berwarna sesuai jalur. Sekitar 60–85 kereta pada malam hari.
+- **Bus TransJakarta (simulasi dari jadwal)**: tombol bus di kartu kontrol peta menyalakannya. Tiap bus bergerak di sepanjang rutenya dan bisa diketuk untuk melihat rute, tujuan, dan halte berikutnya. Ini bukan posisi langsung; lihat [keterbatasannya](#bus-transjakarta-simulasi-bukan-posisi-langsung).
 - **Daftar jalur** dan **ringkasan per operator**.
 - **Papan stasiun**: kereta berikutnya tiap arah, kereta pertama dan terakhir.
 - **Detail kereta**: semua pemberhentian, posisi sekarang, dan mode mengikuti kereta.
@@ -46,7 +47,7 @@ Sudah dicoba di browser dan berjalan:
 
 Ada di kode bawaan tokyo-rail-twin tetapi **belum diuji dengan data Jakarta**: perencana rute, pemutaran ulang waktu, terbang bebas, mode luring (service worker), dan "kereta di dekatku".
 
-Tidak ada: posisi langsung, bus TransJakarta, pintu keluar stasiun, tarif.
+Tidak ada: posisi langsung (kereta maupun bus), pintu keluar stasiun, tarif.
 
 ## Menjalankan
 
@@ -55,7 +56,7 @@ Butuh [Bun](https://bun.sh) 1.1 ke atas.
 ```bash
 bun install
 # 1. simpan berkas data kereta ke var/src/trafik/ (lihat bagian Data)
-bun run data    # 2. bangun var/static/tokyo/ dari berkas itu
+bun run data    # 2. bangun var/static/tokyo/ dari berkas itu, lalu unduh GTFS TransJakarta dan bangun data bus
 bun run dev     # 3. buka http://127.0.0.1:4776
 ```
 
@@ -67,6 +68,8 @@ Perintah lain:
 | `bun run build` | Situs statis di `web/dist` (±3,3 MB), bisa disajikan server web mana pun |
 
 Tanpa langkah 1 dan 2, `bun run data` berhenti dengan pesan yang menyebut berkas yang kurang.
+
+`bun run data` menjalankan dua pembangun berurutan: kereta (`data-build/jakarta.mjs`), lalu bus (`data-build/bus.mjs`). Pembangun bus mengunduh GTFS (2,5 MB) sekali dan menyimpannya di `var/tmp/gtfs/`; `bun data-build/bus.mjs --fetch` mengunduh ulang. Bila unduhan gagal, data kereta tetap terbangun, perintah berakhir dengan kode galat dan pesan yang menyebut sebabnya, dan halaman berjalan tanpa tombol bus. Pembangun bus memakai perintah `unzip` sistem (macOS/Linux).
 
 ## Data
 
@@ -83,6 +86,8 @@ Satu berkas: `asset-krl-*.json` (±296 kB) yang dimuat halaman `trafik.live/kere
 | Label LRT Jabodebek | Commute (ShioriLabs) | MIT |
 | Koordinat stasiun | Kontributor OpenStreetMap | ODbL |
 | Geometri rel | Tidak dinyatakan | Tidak dinyatakan |
+
+Bus memakai sumber kedua, diunduh langsung dari penerbitnya: **GTFS PT Transportasi Jakarta** (`https://gtfs.transjakarta.co.id/files/file_gtfs.zip`): rute, halte, bentuk rute, dan jadwal berbasis frekuensi. Berkas itu tidak memuat pernyataan lisensi. Tidak ada data bus yang diambil dari trafik.live.
 
 ### Cara mengambil
 
@@ -109,6 +114,14 @@ Tidak ada skrip unduh. Server trafik.live menolak klien selain browser (HTTP 403
 | Stasiun | 207 entri, 50 kelompok pindah jalur |
 | Perjalanan | 2.622: 2.133 pada hari kerja, 1.879 pada akhir pekan |
 
+Dari GTFS TransJakarta yang diperbarui 13 November 2026, pembangun bus (±1,5 detik) menghasilkan `bus-v1.json` (1,65 MB; 0,46 MB dengan brotli):
+
+| | Jumlah |
+|---|---|
+| Rute | 241 |
+| Pola trip (masing-masing dengan bentuk rute dan frekuensinya) | 694 |
+| Halte | 7.875 |
+
 Angka ini berubah bila berkas sumbernya diperbarui.
 
 ## Cara kerja
@@ -126,6 +139,14 @@ asset-krl-*.json ─► data-build/jakarta.mjs ─► var/static/tokyo/ ─► w
 3. Memecah tiap jalur sumber menjadi lintasan lurus. Jalur Bogor, misalnya, menjadi "Jakarta Kota–Bogor" dan "Nambo–Jakarta Kota".
 4. Menulis jaringan (`network-v1.json`) dan jadwal yang dipotong per jam per kalender (`tt-v1/`), dalam format yang dibaca kode web.
 
+**Pembangun bus** (`data-build/bus.mjs`):
+
+1. Membaca `trips`, `stop_times`, `shapes`, `frequencies`, `routes`, `stops`, dan `calendar` dari GTFS. Layanan yang masa berlakunya sudah lewat dibuang saat bangun; feed ini tidak punya `calendar_dates`.
+2. Menempatkan tiap halte di sepanjang bentuk rutenya tanpa pernah mundur, supaya rute pulang-pergi dan rute melingkar tidak salah lintasan.
+3. Menulis `bus-v1.json` dalam format lapisan bus bawaan kode asal (`web/src/tokyo/buses/pack.js`), ditambah bagian `sim` berisi kalender dan jadwal frekuensi apa adanya, lalu mendaftarkannya di `packs.json`.
+
+**Simulasi bus** (`web/src/tokyo/buses/sim.js`, berjalan di browser tanpa permintaan jaringan): untuk tiap pola trip, satu bus berangkat tiap headway selama jendela frekuensinya, lalu bergerak di sepanjang bentuk rute menurut waktu tiba di tiap halte. Hari layanan berganti pukul 03.00 WIB, sama dengan kereta: keberangkatan pukul 00.00–02.59 memakai jenis hari sebelumnya.
+
 **Halaman web** (`web/`):
 
 - Memuat jaringan dan jadwal jam berjalan, lalu jam berikutnya sesuai kebutuhan.
@@ -139,6 +160,9 @@ asset-krl-*.json ─► data-build/jakarta.mjs ─► var/static/tokyo/ ─► w
 |---|---|
 | `data-build/jakarta.mjs` | Pembangun data Jakarta |
 | `data-build/jakarta.test.mjs` | Uji berkas hasil bangun |
+| `data-build/bus.mjs` | Pembangun data bus dari GTFS TransJakarta |
+| `data-build/bus.test.mjs` | Uji simulator bus dan berkas hasil bangun bus |
+| `web/src/tokyo/buses/` | Lapisan bus (WebGL) dan simulator jadwal `sim.js` |
 | `web/tokyo.html`, `web/src/tokyo/` | Halaman dan modul fiturnya (peta, papan, pencarian, rute, i18n) |
 | `web/src/layers/city3d/` | Kota 3D, bawah tanah, kamera |
 | `web/src/map/`, `web/src/app/` | Mesin peta dan pembantu antarmuka |
@@ -162,7 +186,28 @@ Nama `tokyo` pada folder, berkas, dan jenis berkas data (`tokyo-network`) adalah
 - **Stasiun bernama sama dengan id berbeda** (misalnya Dukuh Atas MRT dan LRT) belum digabung menjadi satu titik pindah.
 - **Daftar "Pilih stasiunmu"** memakai id yang bergantung pada urutan jalur hasil bangun, jadi bisa bergeser bila data berubah.
 - **Uji bawaan tokyo-rail-twin dihapus**, karena mengunci perilaku Tokyo (zona waktu JST, data Tokyo). Yang ada hanya uji berkas hasil bangun.
-- **Bus TransJakarta** dari purwarupa pertama dilepas dulu. Kodenya ada di riwayat git (commit `e2ae3e6`): simulasi dari GTFS resmi `gtfs.transjakarta.co.id`.
+- **Teks awal tombol bus di `web/tokyo.html`** masih bawaan kode asal ("Show live Toei buses"). Teks itu diganti begitu halaman berjalan, tetapi berkasnya sendiri belum diubah.
+
+### Bus TransJakarta: simulasi, bukan posisi langsung
+
+Bus di peta dihitung dari jadwal GTFS, bukan dari GPS armada. Semua teks bus di halaman menyebutnya simulasi. Yang perlu diketahui:
+
+- **Jumlah bus jauh di atas kenyataan.** GTFS dibaca apa adanya dan tidak ada aturan penyaring yang dikarang. Hasilnya, dari GTFS 13 November 2026:
+
+  | Waktu (WIB) | Bus simulasi |
+  |---|---|
+  | Jumat 08.00 / 13.00 / 20.00 | 5.992 / 5.984 / 6.049 |
+  | Sabtu 08.00 / 13.00 / 20.00 | 5.834 / 5.867 / 5.884 |
+  | Minggu 02.00 | 741 |
+
+  Sebagai pembanding, trafik.live teramati menampilkan sekitar 3.100 bus pada Sabtu malam (angka pengamatan, bukan hasil ukur repo ini).
+- **Dari mana selisihnya, sejauh yang terukur.** Pada Sabtu 13.00, 2.972 dari 5.867 bus adalah Mikrotrans, 1.132 BRT, 901 angkutan umum integrasi, 753 Transjabodetabek. Pola yang dinyatakan beroperasi 00.00–23.59 (88 dari 694 pola) hanya menyumbang 662 bus. Waktu tempuh di `stop_times` setara ±12 km/jam hampir di semua pola (median 88 menit sekali jalan), dan jumlah bus di jalan sebanding dengan waktu tempuh dibagi headway. Sebab pasti selisihnya dengan armada nyata belum diketahui.
+- **Headway adalah satu-satunya jadwal.** GTFS ini tidak memuat jam keberangkatan tiap bus, jadi letak tiap bus di antara dua keberangkatan adalah anggapan (keberangkatan pertama tepat pada awal jendela).
+- **Bus tidak berhenti di halte** dan tidak menunggu di terminal: tiap bus berjalan rata dari halte ke halte, lalu hilang di halte terakhir.
+- **Hari libur nasional** memakai jadwal hari biasanya (tidak ada `calendar_dates`).
+- **Pemutaran ulang waktu** tidak berlaku untuk bus: simulasi hanya untuk waktu sekarang, dan bus dimatikan selama pemutaran ulang.
+- **Kinerja**: pada 5.867 bus, peta berjalan 60 fps di Chromium pada Apple M5 (seluruh Jakarta dan tampilan dekat). Belum diukur di ponsel.
+- **Kredit bus** di Tentang → Data dan kredit hanya tampil selama lapisan bus menyala; lembar tiap bus selalu memuatnya.
 
 ## Riset trafik.live
 

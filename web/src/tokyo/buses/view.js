@@ -5,40 +5,40 @@
 
 export const BUS_TEXT = {
   en: {
-    'bus.chip': 'Buses', 'bus.chip.aria': 'Show live buses', 'bus.op': 'Toei Bus', 'bus.vehicle': 'bus {id}',
-    'bus.for': 'For {name}', 'bus.live': 'Live position · as of {time}', 'bus.stale': 'Last report {n} min ago ({time})',
+    'bus.chip': 'Buses', 'bus.chip.aria': 'Show TransJakarta buses (simulated from the timetable)', 'bus.op': 'TransJakarta', 'bus.vehicle': 'simulated bus',
+    'bus.for': 'For {name}', 'bus.live': 'SIMULATION from the timetable · not a live position', 'bus.stale': 'Last report {n} min ago ({time})',
     'bus.next': 'Next stops', 'bus.now': 'now', 'bus.more': '+{n} more stops to {name}', 'bus.terminus': 'Terminus',
-    'bus.note': 'Toei Bus reports each bus at its stops. Between reports the bus is drawn rolling on toward its next stop, never past it.',
+    'bus.note': 'This bus is a simulation. The TransJakarta GTFS timetable gives a headway for each route pattern; one bus is drawn per headway, moving along its route at the planned stop times. It is not a GPS position: the real bus may be elsewhere, or not running at all.',
     'bus.note.gps': 'This operator sends each bus’s GPS position. Between reports the bus is drawn moving along its route, never past its next stop.',
-    'bus.gone': 'This bus is no longer in the live feed.', 'bus.loading': 'Loading live buses…', 'bus.count': '{n} buses live',
+    'bus.gone': 'This simulated bus has finished its run.', 'bus.loading': 'Loading buses…', 'bus.count': '{n} buses, simulated from the timetable (not live)',
     'bus.nostops': 'No stop list for this trip.',
-    'bus.list': 'Buses near the map centre', 'bus.list.sub': 'Live positions', 'bus.list.next': 'next {name}',
-    'bus.credit': 'Toei Bus data: Bureau of Transportation, Tokyo Metropolitan Government / Association for Open Data of Public Transportation (CC BY 4.0, modified). Accuracy not guaranteed; please do not contact the operator about this app.',
-    'bus.credit.other': 'Bus data: {provider}, via the Public Transportation Open Data Center (CC BY 4.0, modified). Accuracy not guaranteed; please do not contact the operator about this app.',
+    'bus.list': 'Buses near the map centre', 'bus.list.sub': 'Simulated from the timetable', 'bus.list.next': 'next {name}',
+    'bus.credit': 'Bus routes, stops and timetable: GTFS PT Transportasi Jakarta (gtfs.transjakarta.co.id), modified. Bus positions are simulated from the timetable; accuracy not guaranteed. Not affiliated with TransJakarta.',
+    'bus.credit.other': 'Bus routes, stops and timetable: GTFS PT Transportasi Jakarta (gtfs.transjakarta.co.id), modified. Bus positions are simulated from the timetable; accuracy not guaranteed. Not affiliated with TransJakarta.',
   },
   ja: {
-    'bus.chip': 'バス', 'bus.chip.aria': 'バスをリアルタイムで表示', 'bus.op': '都営バス', 'bus.vehicle': '車両 {id}',
-    'bus.for': '{name}行', 'bus.live': '実際の位置 · {time}時点', 'bus.stale': '{n}分前の情報（{time}）',
+    'bus.chip': 'バス', 'bus.chip.aria': 'トランスジャカルタのバスを表示（時刻表からのシミュレーション）', 'bus.op': 'トランスジャカルタ', 'bus.vehicle': 'シミュレーション',
+    'bus.for': '{name}行', 'bus.live': '時刻表からのシミュレーション · 実際の位置ではありません', 'bus.stale': '{n}分前の情報（{time}）',
     'bus.next': '次の停留所', 'bus.now': '停車中', 'bus.more': '{name}まであと{n}停留所', 'bus.terminus': '終点',
-    'bus.note': '都営バスは停留所ごとに位置を送ります。停留所の間は次の停留所へ向かう位置を描いており、次の停留所より先には進みません。',
+    'bus.note': 'このバスはシミュレーションです。トランスジャカルタのGTFS時刻表にある運行間隔ごとに1台を描き、計画上の時刻で経路に沿って動かしています。GPSの位置ではありません。実際のバスは別の場所にいるか、運行していない場合があります。',
     'bus.note.gps': 'この事業者は各バスのGPS位置を送ります。報告の間は路線に沿って動く位置を描いており、次の停留所より先には進みません。',
-    'bus.gone': 'このバスはリアルタイム情報から外れました。', 'bus.loading': 'バスを読み込み中…', 'bus.count': 'リアルタイムのバス {n}台',
+    'bus.gone': 'このシミュレーションのバスは運行を終えました。', 'bus.loading': 'バスを読み込み中…', 'bus.count': 'バス {n}台（時刻表からのシミュレーション）',
     'bus.nostops': 'この便の停留所一覧はありません。',
-    'bus.list': '地図の中心に近いバス', 'bus.list.sub': 'リアルタイム', 'bus.list.next': '次は{name}',
-    'bus.credit': '都営バスのデータ：東京都交通局・公共交通オープンデータ協議会（CC BY 4.0、加工して利用）。データの正確性は保証されません。本アプリについて事業者へのお問い合わせはご遠慮ください。',
-    'bus.credit.other': 'バスのデータ：{provider}（公共交通オープンデータセンター経由、CC BY 4.0、加工して利用）。データの正確性は保証されません。本アプリについて事業者へのお問い合わせはご遠慮ください。',
+    'bus.list': '地図の中心に近いバス', 'bus.list.sub': '時刻表からのシミュレーション', 'bus.list.next': '次は{name}',
+    'bus.credit': 'バスの路線・停留所・時刻表：GTFS PT Transportasi Jakarta（gtfs.transjakarta.co.id）を加工して利用。バスの位置は時刻表からのシミュレーションで、正確性は保証されません。トランスジャカルタとは無関係です。',
+    'bus.credit.other': 'バスの路線・停留所・時刻表：GTFS PT Transportasi Jakarta（gtfs.transjakarta.co.id）を加工して利用。バスの位置は時刻表からのシミュレーションで、正確性は保証されません。トランスジャカルタとは無関係です。',
   },
   id: {
-    'bus.chip': 'Bus', 'bus.chip.aria': 'Tampilkan posisi langsung bus', 'bus.op': 'Bus Toei', 'bus.vehicle': 'nomor bus {id}',
-    'bus.for': 'Ke {name}', 'bus.live': 'Posisi langsung · per {time}', 'bus.stale': 'Laporan terakhir {n} mnt lalu ({time})',
+    'bus.chip': 'Bus', 'bus.chip.aria': 'Tampilkan bus TransJakarta (simulasi dari jadwal)', 'bus.op': 'TransJakarta', 'bus.vehicle': 'bus simulasi',
+    'bus.for': 'Ke {name}', 'bus.live': 'SIMULASI dari jadwal · bukan posisi langsung', 'bus.stale': 'Laporan terakhir {n} mnt lalu ({time})',
     'bus.next': 'Halte berikutnya', 'bus.now': 'sekarang', 'bus.more': '+{n} halte lagi sampai {name}', 'bus.terminus': 'Halte terakhir',
-    'bus.note': 'Bus Toei melaporkan posisi tiap bus di halte. Di antara laporan, bus digambar bergerak ke halte berikutnya, tidak pernah melewatinya.',
+    'bus.note': 'Bus ini simulasi. Jadwal GTFS TransJakarta memberi headway untuk tiap pola rute; satu bus digambar tiap headway dan bergerak di sepanjang rutenya menurut waktu rencana di tiap halte. Ini bukan posisi GPS: bus yang sebenarnya bisa berada di tempat lain, atau tidak beroperasi sama sekali.',
     'bus.note.gps': 'Operator ini mengirim posisi GPS tiap bus. Di antara laporan, bus digambar bergerak di sepanjang rutenya, tidak pernah melewati halte berikutnya.',
-    'bus.gone': 'Bus ini sudah tidak ada di data langsung.', 'bus.loading': 'Memuat posisi bus…', 'bus.count': 'Posisi langsung {n} bus',
+    'bus.gone': 'Bus simulasi ini sudah menyelesaikan perjalanannya.', 'bus.loading': 'Memuat bus…', 'bus.count': '{n} bus, simulasi dari jadwal (bukan posisi langsung)',
     'bus.nostops': 'Tidak ada daftar halte untuk perjalanan ini.',
-    'bus.list': 'Bus di dekat tengah peta', 'bus.list.sub': 'Posisi langsung', 'bus.list.next': 'berikutnya {name}',
-    'bus.credit': 'Data Bus Toei: Bureau of Transportation, Tokyo Metropolitan Government / Association for Open Data of Public Transportation (CC BY 4.0, diubah). Akurasi tidak dijamin; mohon jangan menghubungi operator tentang aplikasi ini.',
-    'bus.credit.other': 'Data bus: {provider}, lewat Public Transportation Open Data Center (CC BY 4.0, diubah). Akurasi tidak dijamin; mohon jangan menghubungi operator tentang aplikasi ini.',
+    'bus.list': 'Bus di dekat tengah peta', 'bus.list.sub': 'Simulasi dari jadwal', 'bus.list.next': 'berikutnya {name}',
+    'bus.credit': 'Rute, halte, dan jadwal bus: GTFS PT Transportasi Jakarta (gtfs.transjakarta.co.id), diolah. Posisi bus adalah simulasi dari jadwal; akurasi tidak dijamin. Tidak berafiliasi dengan TransJakarta.',
+    'bus.credit.other': 'Rute, halte, dan jadwal bus: GTFS PT Transportasi Jakarta (gtfs.transjakarta.co.id), diolah. Posisi bus adalah simulasi dari jadwal; akurasi tidak dijamin. Tidak berafiliasi dengan TransJakarta.',
   },
 };
 
@@ -158,7 +158,7 @@ export const BUS_CSS = `
 .tkb-tag{flex:none;min-width:52px;height:32px;padding:0 10px;border-radius:16px;display:inline-flex;align-items:center;justify-content:center;background:#fff;box-shadow:inset 0 0 0 2.5px var(--rc,#6B6B70);font:700 15px/1 var(--font);color:var(--text,#171717);white-space:nowrap}
 .tkb-live{display:flex;align-items:center;gap:8px;margin:0 0 12px;font:600 14px/18px var(--font);color:var(--text,#171717)}
 .tkb-live.stale{color:var(--text2,#6B6B70);font-weight:500}
-.tkb-dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--income,#1E9E4A)}
+.tkb-dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--text3,#8A8996)}
 .tkb-live.stale .tkb-dot{background:var(--text3,#8A8996)}
 .tkb .sech{margin:4px 0 6px}
 .tkb-stops{list-style:none;margin:0;padding:0}

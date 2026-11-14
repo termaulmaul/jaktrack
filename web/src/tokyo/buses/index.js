@@ -1,7 +1,8 @@
-// Toei buses: trafik.live's live bus layer, ported for Tokyo. Off by default (the page
-// is train-first); one calm "Buses" chip turns it on. Then: the static pack (/data/tokyo/bus-v1.json, 137 KB br) loads
-// once, /api/tokyo/bus.json (server/bus.mjs: ODPT GTFS-RT, Toei Bus, CC BY 4.0) is polled every 20 s while the tab is
-// visible, and every bus moves stop to stop along its own trip's shape (store.js) in a WebGL layer UNDER the trains.
+// TransJakarta buses, SIMULATED from the timetable (not live positions). The layer is trafik.live's bus layer as ported
+// by tokyo-rail-twin for Toei; jaktrack replaces its live feed with sim.js. Off by default; the bus button turns it on.
+// Then: the static pack (/data/tokyo/bus-v1.json, data-build/bus.mjs: GTFS PT Transportasi Jakarta) loads once, sim.js
+// lists the buses on the road every 10 s (one per headway of each trip pattern; no network request), and every bus
+// follows its own trip's shape at the timetable's stop times (store.js applySim) in a WebGL layer UNDER the trains.
 // Tap a bus -> opts.open('bus', id); select(id) rings it, dims the other routes and draws its route + stops.
 //
 //   import { mountBuses } from './buses/index.js'
@@ -12,7 +13,8 @@
 //   buses.setLang('en' | 'ja' | 'id'); buses.destroy()
 import { ShapeIndex } from './shapes.js';
 import { LabelAtlas } from './labels.js';
-import { BusStore, F, STALE_MS } from './store.js';
+import { BusStore } from './store.js';
+import { simTrips, busesNow } from './sim.js';
 import { BusLayer } from './gl.js';
 import { loadBusPack } from './pack.js';
 import { busRowsHtml, busSheetHtml, busT, BUS_CSS, BUS_TEXT, clockJst } from './view.js';
@@ -33,13 +35,12 @@ export function busChipHtml(lang = 'en', on = false, t) {
 }
 
 export function mountBuses(map, opts = {}) {
-  const o = { data: '/data/tokyo/', api: '/api/tokyo/bus.json', every: 20000, before: null, lang: 'en', open: null, onChange: null, ...opts };
+  const o = { data: '/data/tokyo/', every: 10000, before: null, lang: 'en', open: null, onChange: null, ...opts };
   let lang = o.lang;
   let on = false, destroyed = false;
-  let pack = null, packP = null, store = null, layer = null, shapes = null, atlas = null;
-  let pollTimer = 0, frameTimer = 0, inFlight = false, nextPoll = 0, gen = 0, ctl = null;
-  const GONE_MS = 10 * 60000;   // no good answer for this long: every bus fades out (the server drops reports this old)
-  let polls = 0, fails = 0, error = null, lastSnap = null, lastOkAt = 0;
+  let pack = null, trips = null, packP = null, store = null, layer = null, shapes = null, atlas = null;
+  let pollTimer = 0, frameTimer = 0, nextPoll = 0;
+  let polls = 0, error = null, lastSnap = null, lastOkAt = 0;
   let selId = null;
   let pendingFly = null;   // fly(id) asked before that bus was in (a cold #b= link): done after the poll that brings it
   const canvas = map.getCanvas();
@@ -55,6 +56,8 @@ export function mountBuses(map, opts = {}) {
   async function build() {
     pack = await loadBusPack(o.data);
     if (destroyed) return;
+    if (!pack.sim) throw new Error('bus pack has no timetable (sim): run bun data-build/bus.mjs');
+    trips = simTrips(pack);
     shapes = new ShapeIndex();
     shapes.build(pack.shapeList());
     atlas = new LabelAtlas();
@@ -113,43 +116,25 @@ export function mountBuses(map, opts = {}) {
     for (const id of [BUS_LAYER_ID, SEL_STOP, SEL_LINE]) { try { if (map.getLayer(id)) map.removeLayer(id); } catch { /* gone */ } }
   }
 
-  // ------------------------------------------------------------ live feed
-  async function poll() {
+  // ------------------------------------------------------------ simulated from the timetable (sim.js): no network
+  function poll() {
     pollTimer = 0;
     if (!on || destroyed || !store) return;
-    if (typeof document !== 'undefined' && document.hidden) { nextPoll = Date.now(); return; }   // polls again when shown
-    if (inFlight) return;
-    inFlight = true;
-    let wait = o.every;
-    const g = gen;   // setOn(false) / destroy bump gen: an answer that lands after it is dropped
-    try {
-      ctl = typeof AbortController === 'function' ? new AbortController() : null;
-      const res = await fetch(o.api, { cache: 'no-cache', headers: { accept: 'application/json' }, ...(ctl ? { signal: ctl.signal } : {}) });
-      if (g !== gen || !on || destroyed) return;
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const j = await res.json();
-      if (g !== gen || !on || destroyed) return;
-      if (j.off) { error = `off: ${j.reason || ''}`; wait = 5 * 60000; store.applySnapshot({ at: Date.now(), buses: [] }); }
-      else {
-        store.applySnapshot(j);
-        lastSnap = j; lastOkAt = Date.now(); polls++; error = null; fails = 0;
-        if (selId) {   // selected before its bus was in: dim the other routes now
-          const sb = store.get(selId);
-          if (sb && store.focus !== sb.route) store.setFocusRoute(sb.route);
-          drawSel();
-        }
-        if (pendingFly && store.get(pendingFly.id)) { const f = pendingFly; pendingFly = null; api.fly(f.id, f.opts); }
-      }
-    } catch (e) {
-      if (g !== gen || !on || destroyed) return;
-      fails++; error = String(e?.message || e);
-      wait = Math.min(5 * 60000, o.every * 2 ** Math.min(fails, 4));
-      // no answer for long: buses whose report aged out go grey (sheet + pill say so), then all fade out
-      if (lastOkAt && Date.now() - lastOkAt > GONE_MS) store.applySnapshot({ at: Date.now(), buses: [] });
-    } finally { if (g === gen) { inFlight = false; ctl = null; } }
-    if (g !== gen) return;
-    store?.ageFlags(Date.now());
-    if (on && !destroyed) { nextPoll = Date.now() + wait; pollTimer = setTimeout(poll, wait); }
+    if (typeof document !== 'undefined' && document.hidden) { nextPoll = Date.now(); return; }   // again when shown
+    const nowMs = Date.now(), nowPerf = performance.now();
+    const list = busesNow(trips, pack.sim.calendar, nowMs).map(({ trip, el }) => {
+      const dep = nowMs - el * 1000;   // id = pattern + departure time: the same bus in every pass
+      return { id: `${trip.id}.${Math.round(dep / 1000)}`, trip: trip.id, route: trip.route, kt: trip.st.map((s) => nowPerf - (el - s) * 1000), ks: trip.along };
+    });
+    store.applySim(list, nowPerf);
+    lastSnap = { at: nowMs, buses: list }; lastOkAt = nowMs; polls++; error = null;
+    if (selId) {   // selected before its bus was in: dim the other routes now
+      const sb = store.get(selId);
+      if (sb && store.focus !== sb.route) store.setFocusRoute(sb.route);
+      drawSel();
+    }
+    if (pendingFly && store.get(pendingFly.id)) { const f = pendingFly; pendingFly = null; api.fly(f.id, f.opts); }
+    nextPoll = nowMs + o.every; pollTimer = setTimeout(poll, o.every);
     kick();
     emit();
   }
@@ -225,8 +210,7 @@ export function mountBuses(map, opts = {}) {
     }
     return {
       id: b.id, trip: b.trip, route, op: pack.opOf(b.route), head, next, more, last, lngLat: store.lngLat(b),
-      // stale by age at read time too: the last answer may be minutes old when the feed stopped answering
-      reportAt: store.reportAt(b), stale: (b.flags & F.STALE) !== 0 || Date.now() - store.reportAt(b) > STALE_MS, stopSeq: b.stopSeq, mode: b.mode,
+      reportAt: Date.now(), stale: false, stopSeq: b.stopSeq, mode: b.mode,   // simulated: there is no report to age
     };
   }
 
@@ -250,9 +234,6 @@ export function mountBuses(map, opts = {}) {
         clearTimeout(pollTimer);
         poll();
       } else {
-        gen++; inFlight = false;
-        try { ctl?.abort(); } catch { /* done already */ }
-        ctl = null;
         clearTimeout(pollTimer); pollTimer = 0;
         if (store) { store.reset(); store.select(null); store.setFocusRoute(null); }
         selId = null;
@@ -313,14 +294,13 @@ export function mountBuses(map, opts = {}) {
     stats() {
       return {
         on, loaded: !!pack, feed: lastSnap?.buses?.length ?? 0, drawn: store ? store.count : 0, visible: store ? store.visible : 0,
-        feedAt: lastSnap?.feedAt ?? null, at: lastSnap?.at ?? null, polls, fails, error, lastOkAt,
+        feedAt: lastSnap?.feedAt ?? null, at: lastSnap?.at ?? null, polls, fails: 0, error, lastOkAt,
         shapes: shapes ? shapes.size : 0, layer: !!(layer && map.getLayer(BUS_LAYER_ID)), fps: layer?.fps ?? 0,
       };
     },
     labels: () => [],
     destroy() {
-      destroyed = true; on = false; gen++;
-      try { ctl?.abort(); } catch { /* done already */ }
+      destroyed = true; on = false;
       clearTimeout(pollTimer); clearTimeout(frameTimer);
       canvas.removeEventListener('pointerdown', onDown, true);
       canvas.removeEventListener('click', onClick, true);

@@ -55,7 +55,7 @@ export function unpackBus(raw) {
   /** The operator of a route id ({ id, name: {ja, en}, stopReports }), or null. */
   const opOf = (routeId) => { const r = route(routeId); return r ? ops[r.op] || null : null; };
   return {
-    feed: raw.feed || null, feeds: raw.feeds || null, built: raw.built || null, ops, opOf, routes, routeIx, route, heads, stops, stopIx, shapes, shapeIx, pats,
+    feed: raw.feed || null, feeds: raw.feeds || null, sim: raw.sim || null, built: raw.built || null, ops, opOf, routes, routeIx, route, heads, stops, stopIx, shapes, shapeIx, pats,
     flat, tripShape, tripPat, seqIndex,
     /** ShapeIndex.build input: every shape, with its route id so the route fallback works too. */
     shapeList: () => shapes.map((s, i) => ({ id: i, route: routes[s.route]?.id ?? null, dir: s.dir, flat: flat(i) })),

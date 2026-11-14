@@ -171,7 +171,8 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
       mt3d: 'Lines, stations and timetables',
       mt3dText: 'KRL timetable: KRL Commuter Line GTFS data compiled and verified by Open-KRL (github.com/open-krl), CC BY 4.0, as packaged by trafik.live together with its MRT, LRT and intercity timetables. Station coordinates © OpenStreetMap contributors, ODbL. LRT Jabodebek labels: Commute (ShioriLabs), MIT License. This app’s code is adapted from Tokyo Rail Twin (MIT License), parts of which are ported from Mini Tokyo 3D by Akihiko Kusanagi (MIT License).',
       toei: 'Toei lines (CC BY 4.0)',
-      toeiBus: 'Toei Bus (CC BY 4.0)',
+      toeiBus: 'TransJakarta buses',
+      busText: 'Bus routes, stops and timetable: GTFS PT Transportasi Jakarta (gtfs.transjakarta.co.id), modified. Buses on the map are simulated from this timetable (one bus per headway); they are not live positions.',
       busDate: `Bus stops and routes obtained ${busObtained}.`,
       map: 'Map',
       mapText: BASEMAP === 'protomaps' ? 'Map data © OpenStreetMap contributors, under the Open Database License. Basemap tiles from Protomaps, drawn with MapLibre.'
@@ -190,7 +191,8 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
       mt3d: '路線・駅・時刻表',
       mt3dText: 'KRL timetable: KRL Commuter Line GTFS data compiled and verified by Open-KRL (github.com/open-krl), CC BY 4.0, as packaged by trafik.live together with its MRT, LRT and intercity timetables. Station coordinates © OpenStreetMap contributors, ODbL. LRT Jabodebek labels: Commute (ShioriLabs), MIT License. This app’s code is adapted from Tokyo Rail Twin (MIT License), parts of which are ported from Mini Tokyo 3D by Akihiko Kusanagi (MIT License).',
       toei: '都営交通（CC BY 4.0）',
-      toeiBus: '都営バス（CC BY 4.0）',
+      toeiBus: 'トランスジャカルタのバス',
+      busText: 'バスの路線・停留所・時刻表：GTFS PT Transportasi Jakarta（gtfs.transjakarta.co.id）を加工して利用。地図上のバスはこの時刻表からのシミュレーション（運行間隔ごとに1台）で、実際の位置ではありません。',
       busDate: `バスの停留所・系統データの取得日: ${busObtained}。`,
       map: '地図',
       mapText: BASEMAP === 'protomaps' ? '地図データ © OpenStreetMap contributors（Open Database License）。背景地図タイルは Protomaps、描画は MapLibre を利用しています。'
@@ -209,7 +211,8 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
       mt3d: 'Jalur, stasiun, dan jadwal',
       mt3dText: 'Jadwal KRL: data GTFS KRL Commuter Line yang dihimpun dan diverifikasi Open-KRL (github.com/open-krl), CC BY 4.0, sebagaimana dikemas trafik.live bersama jadwal MRT, LRT, dan KA antarkota. Koordinat stasiun © kontributor OpenStreetMap, ODbL. Label LRT Jabodebek: Commute (ShioriLabs), Lisensi MIT. Kode aplikasi ini diadaptasi dari Tokyo Rail Twin (Lisensi MIT), yang sebagian kodenya diadaptasi dari Mini Tokyo 3D karya Akihiko Kusanagi (Lisensi MIT).',
       toei: 'Jalur Toei (CC BY 4.0)',
-      toeiBus: 'Bus Toei (CC BY 4.0)',
+      toeiBus: 'Bus TransJakarta',
+      busText: 'Rute, halte, dan jadwal bus: GTFS PT Transportasi Jakarta (gtfs.transjakarta.co.id), diolah. Bus di peta adalah simulasi dari jadwal ini (satu bus tiap headway), bukan posisi langsung.',
       busDate: `Data halte dan rute bus diambil ${busObtained}.`,
       map: 'Peta',
       mapText: BASEMAP === 'protomaps' ? 'Data peta © kontributor OpenStreetMap, dengan Open Database License. Peta dasar dari Protomaps, digambar dengan MapLibre.'
@@ -227,7 +230,7 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
   return [
     { key: 'asof', head: T.asof, lines: [live ? `${T.asofText}${L === 'ja' ? '' : ' '}${LIVE_NOTE[L]}` : T.asofText, ...(opts?.bus ? [T.busDate] : [])], links: [] }, // JA: sentences join without a space
     { key: 'mt3d', head: T.mt3d, lines: [T.mt3dText], links: [{ href: 'https://github.com/open-krl/pipeline', label: 'github.com/open-krl/pipeline' }, { href: 'https://trafik.live/kereta', label: 'trafik.live/kereta' }, { href: 'https://github.com/lucacadalora/tokyo-rail-twin', label: 'github.com/lucacadalora/tokyo-rail-twin' }, { href: URLS.mt3d, label: 'github.com/nagix/mini-tokyo-3d' }] },
-    ...(opts?.bus || opts?.liveBus ? [{ key: 'toeiBus', head: T.toeiBus, lines: [toeiBusCredit(L)], links: [] }] : []),
+    ...(opts?.bus || opts?.liveBus ? [{ key: 'toeiBus', head: T.toeiBus, lines: [T.busText], links: [{ href: 'https://gtfs.transjakarta.co.id/', label: 'gtfs.transjakarta.co.id' }] }] : []),
     ...BUS_CREDITS.map((b) => ({ key: b.key, head: L === 'ja' ? b.head.ja : b.head.en, lines: [ccCredit(L, b.by, b.sets)], links: [] })),
     { key: 'map', head: T.map, lines: [T.mapText], links: [{ href: URLS.osm, label: 'openstreetmap.org/copyright' },
       ...(BASEMAP === 'protomaps' ? [{ href: URLS.protomaps, label: 'protomaps.com' }] : [{ href: URLS.openfreemap, label: 'openfreemap.org' }, { href: URLS.openmaptiles, label: 'openmaptiles.org' }]),

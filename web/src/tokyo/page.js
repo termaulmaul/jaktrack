@@ -506,7 +506,7 @@ function updateSchedPill() {
       if (st === 'live') { const r = typeof run === 'object' ? run : null; at = lv.liveOf?.(run)?.at ?? (r ? lv.updatedAt?.(r.line) : null) ?? null; }
     } catch { st = 'scheduled'; }
   } else if (sc.name === 'bus' && S.buses?.on) {
-    try { const b = S.buses.info(sc.id); if (b) { st = b.stale ? 'estimated' : 'live'; at = b.reportAt; } } catch { st = 'scheduled'; }
+    st = 'scheduled';   // buses are simulated from the timetable: never the live pill
   } else if (sc.name !== 'bus' && lv) {
     n = sc.name === 'line' ? liveCount(S.ix?.lineIx?.get(sc.id) ?? -2) : liveCount();
     if (n > 0) st = 'live';
@@ -1297,9 +1297,9 @@ async function toggle3D(want, quiet = false) {   // quiet: no tilt / Shinjuku fl
   requestAnimationFrame(chromeSync);   // the 3D chip row shows / hides
   if (!on && S.city3d && /[?&]tc=\d/.test(location.search)) setTimeout(() => { if (!S.on3D) dropTiles(['tk3d-buildings', 'tk3d-viaduct']); }, 400);   // A/B only (see TILE_CACHE)
 }
-// ------------------------------------------------------------------ Toei buses, live (keyless ODPT GTFS-RT)
+// ------------------------------------------------------------------ TransJakarta buses, SIMULATED from the timetable
 // Off by default (the page is train-first). The bus button in the control card turns them on: the static pack loads once,
-// /api/tokyo/bus.json is polled while the tab shows, buses draw UNDER the trains. A tap on a bus opens its sheet (#b=<id>).
+// buses/sim.js works the buses out from the GTFS frequencies (no request), buses draw UNDER the trains. A tap on a bus opens its sheet (#b=<id>).
 // Live data only: in a playback.js (virtual clock) they switch off.
 const busBtn = $('#b-bus');
 async function toggleBuses(want) {

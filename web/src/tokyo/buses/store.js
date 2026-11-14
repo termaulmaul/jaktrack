@@ -103,7 +103,7 @@ export class BusStore {
     this.buses.delete(b.id);
   }
 
-  // ------------------------------------------------------------ snapshots from /api/tokyo/bus.json
+  // ------------------------------------------------------------ live snapshots (unused in jaktrack: see applySim)
   /** Apply one snapshot {at, buses: [{id, trip, route, lat, lng, ts, stopSeq?, stop?, prev?}]}; every bus not in it fades out. */
   applySnapshot(snap, nowPerf = performance.now(), nowMs = Date.now()) {
     if (!snap || !Array.isArray(snap.buses)) return;
@@ -116,6 +116,29 @@ export class BusStore {
       const id = String(r.id);
       seen.add(id);
       this._report(id, r, nowPerf, nowMs + this.skew);
+    }
+    for (const b of this.buses.values()) if (!seen.has(b.id) && !b.removeAt) b.removeAt = nowPerf;
+  }
+
+  /**
+   * Simulated buses (sim.js, from the GTFS timetable; nothing is fetched): list = [{id, trip, route, kt, ks}], kt = this
+   * page's performance.now() time at each stop, ks = along metres of each stop. The whole run is known, so a bus just
+   * follows its keyframes; every bus not in the list fades out.
+   */
+  applySim(list, nowPerf = performance.now()) {
+    this.dirty.frames = true;
+    const seen = new Set();
+    for (const r of list) {
+      seen.add(r.id);
+      let b = this.buses.get(r.id);
+      if (b) { b.removeAt = 0; continue; }
+      const tsi = this.tripShape(r.trip);
+      if (tsi < 0) continue;
+      b = this._new(r.id, nowPerf);
+      Object.assign(b, { trip: r.trip, route: r.route, tsi, msi: tsi, mode: 'shape', kt: r.kt, ks: r.ks, placed: true });
+      this._style(b);
+      const p = this.evalPos(b, nowPerf, this._q);
+      this._placeAt(b, p.x, p.y, p.h, nowPerf, false);
     }
     for (const b of this.buses.values()) if (!seen.has(b.id) && !b.removeAt) b.removeAt = nowPerf;
   }
