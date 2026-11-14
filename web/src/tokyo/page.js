@@ -822,18 +822,26 @@ function lineView(id, ms) {
   return `${head({ lead: disc(l, 'xl'), titleHtml: `${esc(nm(l.title))}${alt(l.title)}`, sub: [nm(S.model.operators?.[l.op]?.title), n ? tn('n.running', n) : ''].filter(Boolean).join(' · ') })}
     ${secHtml(t('line.stations'), tn('n.stations', sts.length), `<div class="kr-track kr-line" style="--lc:${esc(l.color || '#6B6B70')}">${rows}</div>`)}${schedNote()}`;
 }
+/** The search results + the bus routes and stops that match (buses/browse.js; '' while the bus pack is not in). */
 function searchView(q, only = '') {
+  let bus = '';
+  try { bus = S.buses?.searchHtml?.(q, { t, lang: I.lang() }) || ''; } catch (e) { console.warn('[tokyo] bus search', e); }
+  const html = trainSearchView(q, only, !!bus);
+  return html + bus;
+}
+function trainSearchView(q, only = '', quiet = false) {
   const lane = laneQuery(q);
   if (lane && typeof loaded.search?.renderResults === 'function') {
     try {
       const res = only === 'station' ? { ...lane, lines: [], lead: 'stations' } : lane;
+      if (quiet && !res.stations?.length && !res.lines?.length) return '';   // only buses match: no "nothing found" above them
       const html = loaded.search.renderResults(S.searchObj, res, { lang: I.lang(), t });
       if (html) return html;
     } catch (e) { console.warn('[tokyo] search render failed, using the fallback', e); }
   }
   const res = fallbackSearch(q);
   const rows = res.filter((h) => !only || h.t === only).slice(0, 30).map((h) => (h.t === 'station' ? stationRow(S.ix.stationIx.get(h.id)) : lineRow(S.ix.line(h.id), runningNow())));
-  return rows.length ? listHtml(rows) : `<div class="empty"><b>${esc(t('q.none', { q: q.trim() }))}</b><span>${esc(t('q.none.sub'))}</span></div>`;
+  return rows.length ? listHtml(rows) : quiet ? '' : `<div class="empty"><b>${esc(t('q.none', { q: q.trim() }))}</b><span>${esc(t('q.none.sub'))}</span></div>`;
 }
 /** search.js's createSearch(net).query(q, lang, limit) -> {q, stations, lines, lead}; null when not there. */
 function laneQuery(q) {
@@ -1322,7 +1330,7 @@ async function toggleBuses(want) {
         try {
           S.buses = m.mountBuses(S.map, { lang: I.lang(), open: (type, id) => open(type, id), before: 'tokyo-trains', now: NOW, rate: () => (S.pb ? S.pb.rate() : 1),
             onChange: (st) => {
-              if (st?.feed !== S.busN) { S.busN = st?.feed; if (screen().name === 'home') render(); }   // the home's TransJakarta row
+              if (st?.feed !== S.busN || st?.kind !== S.busKind) { S.busN = st?.feed; S.busKind = st?.kind; if (screen().name === 'home' || screen().name === 'lines') render(); }   // the TransJakarta row, chip and route list
               if (S.busSay && st?.on && st.feed) { S.busSay = false; say(t('bus.count', { n: I.fmtNum(st.feed) })); }   // once per switch-on
               if (screen().name === 'bus') render();
             } });

@@ -680,19 +680,20 @@ function picker(ctx, m) {
 // = All); on the home a tap opens the Lines tab with that filter: the chip carries the page's own data-tab, and a
 // capture listener writes the filter before the page draws the tab.
 const OPG_KEY = 'tokyo.lines.op';
+const OPGS = [...CHIPS, 'tj'];   // 'tj' = TransJakarta: buses simulated from the timetable (its own chip, never in the train total)
 let opgMem = null;
 function readOpg() {
-  try { const v = sessionStorage.getItem(OPG_KEY); return CHIPS.includes(v) ? v : null; } catch { return opgMem; }
+  try { const v = sessionStorage.getItem(OPG_KEY); return OPGS.includes(v) ? v : null; } catch { return opgMem; }
 }
 function writeOpg(k) {
-  opgMem = CHIPS.includes(k) ? k : null;
+  opgMem = OPGS.includes(k) ? k : null;
   try { if (opgMem) sessionStorage.setItem(OPG_KEY, opgMem); else sessionStorage.removeItem(OPG_KEY); } catch { /* memory only */ }
 }
 function opChips(r, where, ctx = null) {
   const sel = where === 'lines' ? readOpg() : null;
   const keys = where === 'lines' ? CHIPS.filter((k) => k !== 'other' || r.by[k]) : CHIPS.filter((k) => r.by[k]);
   const c = (k, label, n) => `<button type="button" class="chip" data-opgrp="${k}"${where === 'home' ? ' data-tab="lines"' : ` aria-pressed="${(sel || 'all') === k}"`}>${esc(label)} <b>${esc(fmtNum(n || 0))}</b></button>`;
-  return `<div class="chips kr-chips tb-opchips" role="group" aria-label="${esc(t('board.chips'))}">${where === 'home' ? liveChip(ctx) : ''}${c('all', t('board.lines.all'), r.total)}${keys.map((k) => c(k, t(`board.chip.${k}`), r.by[k])).join('')}</div>`;
+  return `<div class="chips kr-chips tb-opchips" role="group" aria-label="${esc(t('board.chips'))}">${where === 'home' ? liveChip(ctx) : ''}${c('all', t('board.lines.all'), r.total)}${keys.map((k) => c(k, t(`board.chip.${k}`), r.by[k])).join('')}${ctx?.tj ? (ctx.tj.n == null ? c('tj', 'TransJakarta', 0).replace(' <b>0</b>', '') : c('tj', 'TransJakarta', ctx.tj.n)) : ''}</div>`;
 }
 
 // ------------------------------------------------------------------ the live trains, said plainly
@@ -780,13 +781,13 @@ export function homeView(ctx) {
   // added to the trains; only when the bus pack was built (ctx.tj). A tap switches the bus layer on and shows the map.
   if (ctx.tj) {
     const n = ctx.tj.on && Number.isFinite(ctx.tj.n) ? ctx.tj.n : null, sub = t(ctx.tj.on ? 'bus.row.sub' : 'bus.row.off');
-    rows.push(`<button type="button" class="row" data-act="buses-map" aria-label="${esc(`TransJakarta, ${n != null ? `${fmtNum(n)} ${t('bus.word')}, ` : ''}${sub}`)}">${opTile('TransJakarta', { en: 'TransJakarta' })}<span class="rt"><b>TransJakarta</b><span>${esc(sub)}</span></span>${n != null ? `<span class="rr"><span class="big">${esc(fmtNum(n))}</span><small>${esc(t('bus.word'))}</small></span>` : ''}</button>`);
+    rows.unshift(`<button type="button" class="row" data-act="buses-map" aria-label="${esc(`TransJakarta, ${n != null ? `${fmtNum(n)} ${t('bus.word')}, ` : ''}${sub}`)}">${opTile('TransJakarta', { en: 'TransJakarta' })}<span class="rt"><b>TransJakarta</b><span>${esc(sub)}</span></span>${n != null ? `<span class="rr"><span class="big">${esc(fmtNum(n))}</span><small>${esc(t('bus.word'))}</small></span>` : ''}</button>`);
   }
   return `${nowBlock(ctx, m, ms, r, 'home')}
     ${serviceBlock(ctx, m)}
+    ${rows.length ? sec(ctx.playback ? t('pb.ops', { time: clock(serviceTime(ms).seconds) }) : t('board.ops'), t('sched'), list(rows)) : ''}
     ${home}
     ${busesBlock(ctx)}
-    ${rows.length ? sec(ctx.playback ? t('pb.ops', { time: clock(serviceTime(ms).seconds) }) : t('board.ops'), t('sched'), list(rows)) : ''}
     ${note(`${calendarNote(m, ms)} <button type="button" class="kr-link" data-act="about">${esc(t('about.data'))}</button>`)}`;
 }
 
@@ -874,7 +875,13 @@ export function linesView(ctx) {
     const k = chipOf(op.id);
     return sec(opText(op), tn('n.lines', fams.length), list(rows)).replace('<section class="sec"', `<section class="sec" data-opgrp="${k}"${opg && opg !== k ? ' hidden' : ''}`);
   }).join('');
-  return `${nowBlock(ctx, m, ms, r, 'lines')}${secs}${note(`${esc(t('board.rhythm.note'))} ${esc(t('sched.long'))}`)}`;
+  // TransJakarta: the bus routes (buses/browse.js, once the bus pack is in), else a row that switches the bus layer on
+  let tj = '';
+  if (ctx.tj) {
+    try { tj = busesOf(ctx)?.linesHtml?.({ t, lang: lang(), now: ms, hidden: !!opg && opg !== 'tj' }) || ''; } catch (e) { console.warn('[tokyo] bus routes', e); }
+    if (!tj) tj = sec('TransJakarta', t('bus.list.sub'), list([`<button type="button" class="row" data-act="buses-map">${opTile('TransJakarta', { en: 'TransJakarta' })}<span class="rt"><b>TransJakarta</b><span>${esc(t('bus.row.off'))}</span></span></button>`])).replace('<section class="sec"', `<section class="sec" data-opgrp="tj"${opg && opg !== 'tj' ? ' hidden' : ''}`);
+  }
+  return `${nowBlock(ctx, m, ms, r, 'lines')}${secs}${tj}${note(`${esc(t('board.rhythm.note'))} ${esc(t('sched.long'))}`)}`;
 }
 /** "⚠ Delays · " before a Lines-tab row's rhythm when the line has a notice (icon + word). */
 function sevBit(ctx, m, l) {

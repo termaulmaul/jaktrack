@@ -5,6 +5,12 @@
 
 export const BUS_TEXT = {
   en: {
+    'bus.kinds': 'Bus service type', 'bus.kind.all': 'All', 'bus.routes.sub': '{n} routes · simulated from the timetable',
+    'bus.every': 'Every ~{n} min', 'bus.notnow': 'Not running now', 'bus.route.dirs': 'Directions and stops', 'bus.stops.n': '{n} stops',
+    'bus.route.buses': '{n} buses on the road now (simulated from the timetable)', 'bus.stop': 'Bus stop', 'bus.stop.routes': 'Routes at this stop',
+    'bus.eta.sub': 'Estimated from the timetable', 'bus.eta': '~{n} min', 'bus.eta.now': 'due', 'bus.eta.none': 'No service now',
+    'bus.eta.note': 'Arrival times are estimates from the GTFS timetable (one bus per headway), not live predictions.',
+    'bus.search.routes': 'Bus routes', 'bus.search.stops': 'Bus stops', 'bus.ref.gone': 'This route or stop is not in the bus data.',
     'bus.chip': 'Buses', 'bus.chip.aria': 'Show TransJakarta buses (simulated from the timetable)', 'bus.op': 'TransJakarta', 'bus.vehicle': 'simulated bus',
     'bus.for': 'For {name}', 'bus.live': 'SIMULATION from the timetable · not a live position', 'bus.stale': 'Last report {n} min ago ({time})',
     'bus.next': 'Next stops', 'bus.now': 'now', 'bus.more': '+{n} more stops to {name}', 'bus.terminus': 'Terminus',
@@ -29,6 +35,12 @@ export const BUS_TEXT = {
     'bus.credit.other': 'バスの路線・停留所・時刻表：GTFS PT Transportasi Jakarta（gtfs.transjakarta.co.id）を加工して利用。バスの位置は時刻表からのシミュレーションで、正確性は保証されません。トランスジャカルタとは無関係です。',
   },
   id: {
+    'bus.kinds': 'Jenis layanan bus', 'bus.kind.all': 'Semua', 'bus.routes.sub': '{n} rute · simulasi dari jadwal',
+    'bus.every': 'Tiap ~{n} mnt', 'bus.notnow': 'Tidak beroperasi sekarang', 'bus.route.dirs': 'Arah dan halte', 'bus.stops.n': '{n} halte',
+    'bus.route.buses': '{n} bus di jalan sekarang (simulasi dari jadwal)', 'bus.stop': 'Halte bus', 'bus.stop.routes': 'Rute di halte ini',
+    'bus.eta.sub': 'Perkiraan dari jadwal', 'bus.eta': '±{n} mnt', 'bus.eta.now': 'segera', 'bus.eta.none': 'Tidak ada layanan sekarang',
+    'bus.eta.note': 'Waktu kedatangan adalah perkiraan dari jadwal GTFS (satu bus tiap headway), bukan prediksi langsung.',
+    'bus.search.routes': 'Rute bus', 'bus.search.stops': 'Halte bus', 'bus.ref.gone': 'Rute atau halte ini tidak ada di data bus.',
     'bus.chip': 'Bus', 'bus.chip.aria': 'Tampilkan bus TransJakarta (simulasi dari jadwal)', 'bus.op': 'TransJakarta', 'bus.vehicle': 'bus simulasi',
     'bus.for': 'Ke {name}', 'bus.live': 'SIMULASI dari jadwal · bukan posisi langsung', 'bus.stale': 'Laporan terakhir {n} mnt lalu ({time})',
     'bus.next': 'Halte berikutnya', 'bus.now': 'sekarang', 'bus.more': '+{n} halte lagi sampai {name}', 'bus.terminus': 'Halte terakhir',
@@ -175,4 +187,12 @@ export const BUS_CSS = `
 .tkb-credit{margin:6px 0 0;font:400 13px/18px var(--font);color:var(--text3,#8A8996)}
 .tkb-tag.sm{min-width:44px;height:28px;padding:0 8px;border-radius:14px;font-size:13px;box-shadow:inset 0 0 0 2.2px var(--rc,#6B6B70)}
 .tkb-row .rt > span{white-space:normal}
+.tkb-kinds{margin:0 0 10px}
+.tkb-tag .i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
+.tkb-dir{margin:0 0 6px;border-top:1px solid var(--line,#E7E7EC)}
+.tkb-dir summary{display:flex;flex-direction:column;gap:2px;min-height:44px;padding:8px 0;cursor:pointer;list-style:none}
+.tkb-dir summary::-webkit-details-marker{display:none}
+.tkb-dir summary b{font:600 15px/20px var(--font)}
+.tkb-dir summary span{font:400 13px/17px var(--font);color:var(--text2,#6B6B70)}
+.tkb-stopbtn{flex:1;min-width:0;min-height:36px;padding:0;background:none;color:inherit;text-align:left;font:600 15px/20px var(--font)}
 `;

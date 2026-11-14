@@ -9,9 +9,9 @@ export function unpackBus(raw) {
   // operators (a pack without the table is Toei only); stopReports: the feed reports a bus AT its stops (Toei)
   const ops = (Array.isArray(raw.ops) && raw.ops.length ? raw.ops : [{ id: 'toei', name: { ja: '都営バス', en: 'Toei Bus' }, stopReports: true }])
     .map((o) => ({ id: String(o.id), name: { ja: o.name?.ja || '', en: o.name?.en || o.name?.ja || '' }, stopReports: !!o.stopReports }));
-  const routes = raw.routes.map(([id, ja, en, code, color, , op]) => {
+  const routes = raw.routes.map(([id, ja, en, code, color, kind, op]) => {
     const c = routeColor(color || BUS_GREY);
-    return { id, tag: { ja, en: en || ja }, code: code || null, color: c.hex, gtfsColor: color, rgb: c.rgb, trgb: c.text, op: Number.isInteger(op) && ops[op] ? op : 0 };
+    return { id, kind: kind || null, tag: { ja, en: en || ja }, code: code || null, color: c.hex, gtfsColor: color, rgb: c.rgb, trgb: c.text, op: Number.isInteger(op) && ops[op] ? op : 0 };
   });
   const routeIx = new Map(routes.map((r, i) => [r.id, i]));
   const heads = raw.heads.map(([ja, en]) => ({ ja, en: en || ja }));

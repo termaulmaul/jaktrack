@@ -90,3 +90,41 @@ test.skipIf(!built)('simulasi dari berkas bus: ada bus di jam sibuk, id unik', (
   expect(new Set(list.map(({ trip, el }) => `${trip.id}.${Math.round(at / 1000 - el)}`)).size).toBe(list.length);
   for (const { trip, el } of list) { expect(el).toBeGreaterThanOrEqual(0); expect(el).toBeLessThanOrEqual(trip.dur); }
 });
+
+test('headway sekarang dan perkiraan kedatangan berikutnya di halte', async () => {
+  const { headwayNow, nextArrival } = await import('../web/src/tokyo/buses/sim.js');
+  const cal = { SH: [1, 1, 1, 1, 1, 1, 1] }, wib = (h, m = 0, s = 0) => Date.UTC(2026, 10, 13, h - 7, m, s);
+  const t = { sv: 'SH', st: [0, 300, 600], dur: 600, f: serviceWindows([[18000, 79200, 600]]) };   // 05.00-22.00 tiap 10 menit
+  expect(headwayNow(t, cal, wib(4, 59))).toBe(null);
+  expect(headwayNow(t, cal, wib(5))).toBe(600);
+  expect(headwayNow(t, cal, wib(22))).toBe(null);
+  expect(headwayNow(t, { SH: [0, 0, 0, 0, 0, 0, 0] }, wib(8))).toBe(null);
+  expect(nextArrival(t, 1, cal, wib(8, 0, 0))).toBe(300);      // berangkat 08.00, tiba 08.05
+  expect(nextArrival(t, 1, cal, wib(8, 5, 0))).toBe(0);        // bus 08.00 tepat tiba
+  expect(nextArrival(t, 1, cal, wib(8, 6, 0))).toBe(540);      // bus 08.10 tiba 08.15
+  expect(nextArrival(t, 1, cal, wib(4, 0, 0))).toBe(3900);     // bus pertama 05.00 tiba 05.05
+  expect(nextArrival(t, 1, cal, wib(22, 0, 0))).toBe(null);    // bus terakhir 21.50 sudah lewat (tiba 21.55)
+  expect(nextArrival(t, 2, cal, wib(21, 55, 0))).toBe(300);    // bus 21.50 tiba di halte terakhir 22.00
+});
+
+test.skipIf(!built)('jenis layanan dari route_desc dan daftar rute', async () => {
+  const { makeBrowse, linesHtml, routeSheet, stopSheet, searchHtml, routeIdsOf, KINDS } = await import('../web/src/tokyo/buses/browse.js');
+  const pack = unpackBus(JSON.parse(readFileSync(FILE, 'utf8'))), B = makeBrowse(pack, simTrips(pack));
+  const known = new Set(KINDS.map((k) => k[0]));
+  for (const r of pack.routes) expect(known.has(r.kind)).toBe(true);           // tidak ada jenis di luar pemetaan
+  expect(B.kinds.reduce((n, k) => n + k[1], 0)).toBe(B.routes.length);
+  expect(B.routes[0].kind).toBe('BRT');                                         // koridor BRT lebih dulu
+  const ctx = { lang: 'id', now: Date.UTC(2026, 10, 13, 1) };                   // Jumat 08.00 WIB
+  expect(linesHtml(B, ctx)).toContain('Tiap ~');
+  B.kind = 'BRT';
+  expect((linesHtml(B, ctx).match(/data-bus="r:/g) || []).length).toBe(routeIdsOf(B, 'BRT').size);
+  const r1 = B.routes.find((r) => r.tag === '1');
+  expect(routeSheet(B, r1.id, ctx)).toContain('data-bus="s:');
+  const stopId = pack.stops[pack.pats[r1.pats[0]].stops[2]].id, sheet = stopSheet(B, stopId, ctx);
+  expect(sheet).toContain('Perkiraan dari jadwal');
+  expect(sheet).toMatch(/±\d+ mnt|segera/);
+  expect(sheet).not.toMatch(/live|langsung ·/i);
+  expect(searchHtml(B, 'blok m', ctx)).toContain('data-bus="s:');
+  expect(searchHtml(B, '1', ctx)).toContain(`data-bus="r:${r1.id}"`);
+  expect(searchHtml(B, 'zzzzqq', ctx)).toBe('');
+});

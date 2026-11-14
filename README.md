@@ -36,6 +36,7 @@ Sudah dicoba di browser dan berjalan:
 
 - **Peta 2D** dengan setiap kereta bergerak di relnya, berwarna sesuai jalur. Sekitar 60–85 kereta pada malam hari.
 - **Bus TransJakarta (simulasi dari jadwal)**: menyala secara bawaan bila data bus sudah dibangun; tombol bus di kartu kontrol peta mematikan atau menyalakannya, dan pilihan itu diingat browser. Beranda memuat baris TransJakarta dengan jumlah bus pada jam halaman (tidak dijumlahkan ke angka kereta). Tiap bus bergerak di sepanjang rutenya dan bisa diketuk untuk melihat rute, tujuan, dan halte berikutnya. Ini bukan posisi langsung; lihat [keterbatasannya](#bus-transjakarta-simulasi-bukan-posisi-langsung).
+- **Rute dan halte bus**: di tab Jalur ada bagian TransJakarta berisi 241 rute (koridor BRT lebih dulu) dengan headway saat ini dan saringan jenis layanan; saringan itu juga berlaku untuk bus di peta. Mengetuk rute menggambar rute, halte, dan busnya. Mengetuk halte (di peta pada zoom dekat, dari lembar rute, atau dari pencarian) membuka rute yang lewat beserta kedatangan berikutnya, berlabel "perkiraan dari jadwal". Pencarian menemukan rute dan halte bus.
 - **Daftar jalur** dan **ringkasan per operator**.
 - **Papan stasiun**: kereta berikutnya tiap arah, kereta pertama dan terakhir.
 - **Detail kereta**: semua pemberhentian, posisi sekarang, dan mode mengikuti kereta.
@@ -162,7 +163,7 @@ asset-krl-*.json ─► data-build/jakarta.mjs ─► var/static/tokyo/ ─► w
 | `data-build/jakarta.test.mjs` | Uji berkas hasil bangun |
 | `data-build/bus.mjs` | Pembangun data bus dari GTFS TransJakarta |
 | `data-build/bus.test.mjs` | Uji simulator bus dan berkas hasil bangun bus |
-| `web/src/tokyo/buses/` | Lapisan bus (WebGL) dan simulator jadwal `sim.js` |
+| `web/src/tokyo/buses/` | Lapisan bus (WebGL), simulator jadwal `sim.js`, daftar rute dan lembar halte `browse.js` |
 | `web/tokyo.html`, `web/src/tokyo/` | Halaman dan modul fiturnya (peta, papan, pencarian, rute, i18n) |
 | `web/src/layers/city3d/` | Kota 3D, bawah tanah, kamera |
 | `web/src/map/`, `web/src/app/` | Mesin peta dan pembantu antarmuka |
@@ -202,6 +203,19 @@ Bus di peta dihitung dari jadwal GTFS, bukan dari GPS armada. Semua teks bus di 
 
   Sebagai pembanding, trafik.live teramati menampilkan sekitar 3.100 bus pada Sabtu malam (angka pengamatan, bukan hasil ukur repo ini).
 - **Dari mana selisihnya, sejauh yang terukur.** Pada Sabtu 13.00, 2.972 dari 5.867 bus adalah Mikrotrans, 1.132 BRT, 901 angkutan umum integrasi, 753 Transjabodetabek. Pola yang dinyatakan beroperasi 00.00–23.59 (88 dari 694 pola) hanya menyumbang 662 bus. Waktu tempuh di `stop_times` setara ±12 km/jam hampir di semua pola (median 88 menit sekali jalan), dan jumlah bus di jalan sebanding dengan waktu tempuh dibagi headway. Sebab pasti selisihnya dengan armada nyata belum diketahui.
+- **Jenis layanan** diambil dari `route_desc` GTFS apa adanya; hanya dua labelnya yang dipendekkan di chip:
+
+  | `route_desc` di GTFS | Label chip | Rute |
+  |---|---|---|
+  | BRT | BRT | 31 |
+  | Angkutan Umum Integrasi | Non-BRT | 64 |
+  | Mikrotrans | Mikrotrans | 98 |
+  | Transjabodetabek | Transjabodetabek | 18 |
+  | Royaltrans | Royaltrans | 13 |
+  | Rusun | Rusun | 14 |
+  | Bus Wisata | Wisata | 3 |
+- **Kedatangan di halte adalah perkiraan dari jadwal**, dihitung dari headway dan waktu tempuh GTFS yang sama dengan simulasi; bukan prediksi langsung.
+- **Halte bernama sama** (dua sisi jalan, beberapa peron) tampil sebagai entri terpisah di pencarian, dibedakan oleh rute yang lewat.
 - **Headway adalah satu-satunya jadwal.** GTFS ini tidak memuat jam keberangkatan tiap bus, jadi letak tiap bus di antara dua keberangkatan adalah anggapan (keberangkatan pertama tepat pada awal jendela).
 - **Bus tidak berhenti di halte** dan tidak menunggu di terminal: tiap bus berjalan rata dari halte ke halte, lalu hilang di halte terakhir.
 - **Hari libur nasional** memakai jadwal hari biasanya (tidak ada `calendar_dates`).

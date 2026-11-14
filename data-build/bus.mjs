@@ -75,7 +75,7 @@ for (const t of csv('trips')) {
   const route = routeRows.get(t.route_id);
   if (st.length < 2 || pts.length < 2 || !f.length || !route) { skipped.push(t.trip_id); continue; }
 
-  const ri = intern(routeIx, routes, route.route_id, [route.route_id, route.route_short_name, route.route_long_name, null, `#${route.route_color || '888888'}`, null, 0]);
+  const ri = intern(routeIx, routes, route.route_id, [route.route_id, route.route_short_name, route.route_long_name, null, `#${route.route_color || '888888'}`, route.route_desc || null, 0]);   // [5] = jenis layanan (route_desc)
   const pi = pats.length;
   const si = intern(shapeIx, shapes, t.shape_id, null);
   if (!shapes[si]) {

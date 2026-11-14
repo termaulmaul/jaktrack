@@ -51,6 +51,32 @@ export function jakartaClock(ms) {
   return { sec, day, yesterday: (day + 6) % 7 };
 }
 
+/** Dua lintasan waktu yang dipakai busesAt: [detik, hari] hari ini dan kemarin (+24 jam), hanya yang layanannya aktif. */
+const passes = (trip, calendar, ms) => {
+  const c = jakartaClock(ms);
+  return [[c.sec, c.day], [c.sec + DAY, c.yesterday]].filter(([, day]) => calendar[trip.sv]?.[day]).map(([t]) => t);
+};
+
+/** Headway (detik) pola ini pada waktu `ms`: jendela frekuensi yang sedang terbuka, atau null bila tidak ada. */
+export function headwayNow(trip, calendar, ms) {
+  let best = null;
+  for (const t of passes(trip, calendar, ms)) for (const [start, end, headway] of trip.f) {
+    if (headway > 0 && t >= start && t < end && (best == null || headway < best)) best = headway;
+  }
+  return best;
+}
+
+/** Detik sampai bus berikutnya dari pola ini tiba di halte ke-j (st[j] detik setelah berangkat), atau null. Perkiraan dari jadwal. */
+export function nextArrival(trip, j, calendar, ms) {
+  let best = null;
+  for (const t of passes(trip, calendar, ms)) for (const [start, end, headway] of trip.f) {
+    if (headway <= 0) continue;
+    const dep = start + Math.max(0, Math.ceil((t - trip.st[j] - start) / headway)) * headway;   // keberangkatan pertama yang belum lewat halte ini
+    if (dep < end && (best == null || dep + trip.st[j] - t < best)) best = dep + trip.st[j] - t;
+  }
+  return best;
+}
+
 /** Trip siap simulasi dari bagian `sim` berkas bus: [[id, indeks rute, layanan, st, f]], sejajar dengan pack.pats. */
 export const simTrips = (pack) => pack.sim.trips.map(([id, r, sv, st, f], i) => (
   { id, route: pack.routes[r].id, sv, st, along: pack.pats[i].along, f: serviceWindows(f), dur: st[st.length - 1] }));

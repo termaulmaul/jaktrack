@@ -16,6 +16,7 @@ import { ShapeIndex } from './shapes.js';
 import { LabelAtlas } from './labels.js';
 import { BusStore } from './store.js';
 import { simTrips, busesNow } from './sim.js';
+import { makeBrowse, routeIdsOf, linesHtml, routeSheet, stopSheet, searchHtml, isRef } from './browse.js';
 import { BusLayer } from './gl.js';
 import { loadBusPack } from './pack.js';
 import { busRowsHtml, busSheetHtml, busT, BUS_CSS, BUS_TEXT, clockJst } from './view.js';
@@ -26,6 +27,9 @@ export { BUS_TEXT, busSheetHtml, clockJst };
 const SEL_SRC = 'tokyo-bus-sel';
 const SEL_LINE = 'tokyo-bus-sel-line';
 const SEL_STOP = 'tokyo-bus-sel-stop';
+const STOPS_SRC = 'tokyo-bus-stops';   // every bus stop, shown and tappable from STOPS_ZOOM
+const STOPS = 'tokyo-bus-stops';
+const STOPS_ZOOM = 14.5;
 const EMPTY = { type: 'FeatureCollection', features: [] };
 
 /** The chip that turns buses on/off (page.js places it next to 3D). data-act="buses", aria-pressed = on. */
@@ -39,7 +43,7 @@ export function mountBuses(map, opts = {}) {
   const o = { data: '/data/tokyo/', every: 10000, now: Date.now, rate: () => 1, before: null, lang: 'en', open: null, onChange: null, ...opts };
   let lang = o.lang;
   let on = false, destroyed = false;
-  let pack = null, trips = null, packP = null, store = null, layer = null, shapes = null, atlas = null;
+  let pack = null, trips = null, browse = null, packP = null, store = null, layer = null, shapes = null, atlas = null;
   let pollTimer = 0, frameTimer = 0, nextPoll = 0;
   let polls = 0, error = null, lastSnap = null, lastOkAt = 0;
   let selId = null;
@@ -59,6 +63,7 @@ export function mountBuses(map, opts = {}) {
     if (destroyed) return;
     if (!pack.sim) throw new Error('bus pack has no timetable (sim): run bun data-build/bus.mjs');
     trips = simTrips(pack);
+    browse = makeBrowse(pack, trips);
     shapes = new ShapeIndex();
     shapes.build(pack.shapeList());
     atlas = new LabelAtlas();
@@ -97,6 +102,14 @@ export function mountBuses(map, opts = {}) {
     if (!layer || map.getLayer(BUS_LAYER_ID)) return;
     const before = beforeId();
     try {
+      if (!map.getSource(STOPS_SRC)) {
+        map.addSource(STOPS_SRC, { type: 'geojson', data: { type: 'FeatureCollection',
+          features: pack.stops.map((s) => ({ type: 'Feature', properties: { id: s.id }, geometry: { type: 'Point', coordinates: [s.lng, s.lat] } })) } });
+      }
+      if (!map.getLayer(STOPS)) {
+        map.addLayer({ id: STOPS, type: 'circle', source: STOPS_SRC, minzoom: STOPS_ZOOM,
+          paint: { 'circle-radius': ['interpolate', ['linear'], ['zoom'], 14.5, 2.5, 17, 5], 'circle-color': '#FFFFFF', 'circle-stroke-color': '#6B6B70', 'circle-stroke-width': 1.5 } }, before);
+      }
       if (!map.getSource(SEL_SRC)) map.addSource(SEL_SRC, { type: 'geojson', data: EMPTY });
       if (!map.getLayer(SEL_LINE)) {
         map.addLayer({ id: SEL_LINE, type: 'line', source: SEL_SRC, filter: ['==', ['geometry-type'], 'LineString'],
@@ -116,7 +129,7 @@ export function mountBuses(map, opts = {}) {
   /** Buses off: the layers leave the map, so the custom layer's render() (cull + 2 instanced passes) never runs while
    *  off. The GL buffers go with it (onRemove) and are made again by onAdd when buses come back. */
   function detachLayers() {
-    for (const id of [BUS_LAYER_ID, SEL_STOP, SEL_LINE]) { try { if (map.getLayer(id)) map.removeLayer(id); } catch { /* gone */ } }
+    for (const id of [BUS_LAYER_ID, SEL_STOP, SEL_LINE, STOPS]) { try { if (map.getLayer(id)) map.removeLayer(id); } catch { /* gone */ } }
   }
 
   // ------------------------------------------------------------ simulated from the timetable (sim.js): no network
@@ -135,12 +148,12 @@ export function mountBuses(map, opts = {}) {
     });
     store.applySim(list, nowPerf);
     lastSnap = { at: nowMs, buses: list }; lastOkAt = Date.now(); polls++; error = null;
-    if (selId) {   // selected before its bus was in: dim the other routes now
+    if (selId && !isRef(selId)) {   // selected before its bus was in: dim the other routes now
       const sb = store.get(selId);
       if (sb && store.focus !== sb.route) store.setFocusRoute(sb.route);
       drawSel();
     }
-    if (pendingFly && store.get(pendingFly.id)) { const f = pendingFly; pendingFly = null; api.fly(f.id, f.opts); }
+    if (pendingFly && (isRef(pendingFly.id) || store.get(pendingFly.id))) { const f = pendingFly; pendingFly = null; api.fly(f.id, f.opts); }
     const wait = Math.max(500, o.every / Math.max(1, rate));   // a fast playback: departures and arrivals come sooner
     nextPoll = Date.now() + wait; pollTimer = setTimeout(poll, wait);
     kick();
@@ -163,19 +176,48 @@ export function mountBuses(map, opts = {}) {
     if (!on || !store || destroyed) return;
     if (downAt && Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return;
     const rect = canvas.getBoundingClientRect();
-    const b = store.pick(e.clientX - rect.left, e.clientY - rect.top, pickRadius(), project);
-    if (!b) return;
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    const b = store.pick(x, y, pickRadius(), project);
+    let id = b ? b.id : null;
+    if (!id && map.getZoom() >= STOPS_ZOOM && map.getLayer(STOPS)) {   // no bus there: a bus stop (close zoom only)
+      const f = map.queryRenderedFeatures([[x - 12, y - 12], [x + 12, y + 12]], { layers: [STOPS] })[0];
+      if (f) id = `s:${f.properties.id}`;
+    }
+    if (!id) return;
     e.preventDefault(); e.stopImmediatePropagation();
-    if (o.open) o.open('bus', b.id);
-    else api.select(b.id);
+    if (o.open) o.open('bus', id);
+    else api.select(id);
   };
+  // the service-type chips (browse.js kindChips): pressed again = all
+  const onKind = (e) => { const c = e.target?.closest?.('[data-buskind]'); if (c && browse) api.setKind(c.dataset.buskind && c.dataset.buskind !== browse.kind ? c.dataset.buskind : null); };
+  if (typeof document !== 'undefined') document.addEventListener('click', onKind);
   canvas.addEventListener('pointerdown', onDown, true);
   canvas.addEventListener('click', onClick, true);
 
   // ------------------------------------------------------------ selection: ring + dim others + route line + stops
+  const lineOf = (si, color) => {
+    const flat = pack.flat(si) || [], coords = [];
+    for (let i = 0; i < flat.length; i += 2) coords.push([flat[i], flat[i + 1]]);
+    return { type: 'Feature', properties: { color }, geometry: { type: 'LineString', coordinates: coords } };
+  };
+  const pointOf = (s, color) => ({ type: 'Feature', properties: { color }, geometry: { type: 'Point', coordinates: [s.lng, s.lat] } });
+  /** A route ("r:<id>": every pattern's line + stops) or a stop ("s:<id>") as the selection's features. */
+  function refFeatures(ref) {
+    const id = ref.slice(2);
+    if (ref[0] === 's') { const s = pack.stops[pack.stopIx.get(id)]; return s ? [pointOf(s, '#171717')] : []; }
+    const r = browse.byId.get(id), feats = [], seen = new Set();
+    if (!r) return feats;
+    for (const ti of r.pats) {
+      const p = pack.pats[ti];
+      if (!seen.has(`l${p.shape}`)) { seen.add(`l${p.shape}`); feats.push(lineOf(p.shape, r.color)); }
+      for (const k of p.stops) if (!seen.has(k)) { seen.add(k); feats.push(pointOf(pack.stops[k], r.color)); }
+    }
+    return feats;
+  }
   function drawSel() {
     const src = map.getSource(SEL_SRC);
     if (!src) return;
+    if (isRef(selId) && browse) { src.setData({ type: 'FeatureCollection', features: refFeatures(selId) }); return; }
     const b = selId && store?.get(selId);
     if (!b || b.tsi < 0) { src.setData(EMPTY); return; }
     const r = pack.route(b.route);
@@ -264,18 +306,36 @@ export function mountBuses(map, opts = {}) {
       selId = id ? String(id) : null;
       if (!selId || (pendingFly && pendingFly.id !== selId)) pendingFly = null;
       if (!store) return;
-      store.select(selId);
-      const b = selId && store.get(selId);
-      store.setFocusRoute(b ? b.route : null);
+      const ref = isRef(selId);
+      store.select(ref ? null : selId);
+      const b = !ref && selId && store.get(selId);
+      store.setFocusRoute(b ? b.route : ref && selId[0] === 'r' ? selId.slice(2) : null);
       drawSel();
       kick();
     },
     info,
     /** The bus sheet as an HTML string (ctx.t = the page's i18n t, ctx.lang). */
     /** ctx.close: put the close button in the sheet's head (desktop pane, like the train / line views). */
-    view(id, ctx = {}) { return busSheetHtml(info(id), { lang: ctx.lang || lang, t: ctx.t, now: Date.now(), close: !!ctx.close, loading: !polls && (on || !pack) }); },
+    view(id, ctx = {}) {
+      if (isRef(id) && browse) {
+        const c = { lang: ctx.lang || lang, t: ctx.t, now: o.now(), close: !!ctx.close };
+        if (id[0] === 's') return stopSheet(browse, id.slice(2), c);
+        let n = 0;
+        for (const b of store.buses.values()) if (b.route === id.slice(2) && !b.removeAt) n++;
+        return routeSheet(browse, id.slice(2), { ...c, n });
+      }
+      return busSheetHtml(info(id), { lang: ctx.lang || lang, t: ctx.t, now: Date.now(), close: !!ctx.close, loading: !polls && (on || !pack) });
+    },
     /** Ease the camera to the bus (street zoom) unless it is already well inside the view. */
     fly(id, { zoom = 15, padding } = {}) {
+      if (isRef(id) && browse) {   // a route: all of it in view; a stop: street zoom
+        const pts = refFeatures(String(id)).flatMap((f) => (f.geometry.type === 'Point' ? [f.geometry.coordinates] : f.geometry.coordinates));
+        if (!pts.length) return false;
+        const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
+        if (id[0] === 's') map.easeTo({ center: pts[0], zoom: Math.max(map.getZoom(), 16), duration: 700, ...(padding ? { padding } : {}) });
+        else map.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: 60, maxZoom: 15, duration: 700 });
+        return true;
+      }
       const b = store?.get(String(id));
       if (!b) { pendingFly = { id: String(id), opts: { zoom, padding } }; return false; }
       const ll = store.lngLat(b);
@@ -303,9 +363,20 @@ export function mountBuses(map, opts = {}) {
     /** near()'s items as buttons (data-bus = id) in the page's row look; ctx: { t, lang }. */
     rowsHtml: (list, ctx = {}) => busRowsHtml(list, { lang: ctx.lang || lang, t: ctx.t, now: Date.now() }),
     chipHtml: (t) => busChipHtml(lang, on, t),
+    /** The Lines tab's TransJakarta section (chips + routes), the search rows for q; '' until the pack is in. */
+    linesHtml: (ctx = {}) => (browse ? linesHtml(browse, { lang, now: o.now(), ...ctx }) : ''),
+    searchHtml: (q, ctx = {}) => (browse ? searchHtml(browse, q, { lang, now: o.now(), ...ctx }) : ''),
+    /** Show one service type only (GTFS route_desc; null = all): the map's buses and the route list. */
+    setKind(k) {
+      if (!browse) return;
+      browse.kind = browse.kinds.some((x) => x[0] === k) ? k : null;
+      store.setRouteFilter(routeIdsOf(browse, browse.kind));
+      kick(); emit();
+    },
+    get kinds() { return browse ? browse.kinds : []; },
     stats() {
       return {
-        on, loaded: !!pack, feed: lastSnap?.buses?.length ?? 0, drawn: store ? store.count : 0, visible: store ? store.visible : 0,
+        on, loaded: !!pack, kind: browse?.kind ?? null, feed: lastSnap?.buses?.length ?? 0, drawn: store ? store.count : 0, visible: store ? store.visible : 0,
         feedAt: lastSnap?.feedAt ?? null, at: lastSnap?.at ?? null, polls, fails: 0, error, lastOkAt,
         shapes: shapes ? shapes.size : 0, layer: !!(layer && map.getLayer(BUS_LAYER_ID)), fps: layer?.fps ?? 0,
       };
@@ -314,12 +385,13 @@ export function mountBuses(map, opts = {}) {
     destroy() {
       destroyed = true; on = false;
       clearTimeout(pollTimer); clearTimeout(frameTimer);
+      if (typeof document !== 'undefined') document.removeEventListener('click', onKind);
       canvas.removeEventListener('pointerdown', onDown, true);
       canvas.removeEventListener('click', onClick, true);
       if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVis);
       map.off('styledata', reattach);
-      for (const id of [BUS_LAYER_ID, SEL_STOP, SEL_LINE]) { try { if (map.getLayer(id)) map.removeLayer(id); } catch { /* gone */ } }
-      try { if (map.getSource(SEL_SRC)) map.removeSource(SEL_SRC); } catch { /* gone */ }
+      for (const id of [BUS_LAYER_ID, SEL_STOP, SEL_LINE, STOPS]) { try { if (map.getLayer(id)) map.removeLayer(id); } catch { /* gone */ } }
+      for (const s of [SEL_SRC, STOPS_SRC]) { try { if (map.getSource(s)) map.removeSource(s); } catch { /* gone */ } }
     },
   };
   if (o.on) api.setOn(true);
