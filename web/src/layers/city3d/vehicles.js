@@ -463,7 +463,9 @@ export function createTrains3d(opts) {
         // jaktrack: the open train is never a ghost either (it was a flat box in its accent colour: an MRT train followed
         // through its tunnel in the surface view, or on its viaduct in the underground view, turned into a plain blue slab)
         const sel = selected != null && (tr.id === selected || tr.run?.key === selected) ? 4 : 0;
-        const faint = !ridden && !sel && (under ? !isUnder : isUnder);
+        // jaktrack: di mode bawah tanah kereta permukaan tetap digambar utuh (aslinya dipudarkan jadi balok abu-abu), supaya
+        // unit kereta terlihat sama di kedua mode. Hanya kereta di bawah jalan pada 3D biasa yang tetap samar.
+        const faint = !ridden && !sel && !under && isUnder;
         tr.open = !(hMid < UNDER_M) || !!R2?.inOpen(tr.line, mid / k);
         const live = !faint && !!tr.live;
         if (pass !== (faint ? 2 : live ? 0 : 1)) continue;
