@@ -4,6 +4,8 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { encodePath, segLen } from '../web/src/tokyo/net.js';
+import { KIND, PREFER_UP } from './elev.mjs';
+import { snapper } from './snap.mjs';
 
 const SRC_DIR = 'var/src/trafik', OUT = 'var/static/tokyo';
 const srcFile = existsSync(SRC_DIR) && readdirSync(SRC_DIR).filter(f => /^asset-krl-.*\.json$/.test(f)).sort().at(-1);
@@ -62,6 +64,25 @@ function route(net, a, b) {                              // Dijkstra sederhana; 
   return found;
 }
 const netOf = system => (system === 'kai' ? 'kai' : '');
+// Trase: tiap potongan rel antarstasiun digeser menyamping ke garis tengah rel OpenStreetMap (data-build/snap.mjs), supaya
+// jalur, kereta, viaduk, dan terowongan berimpit dengan peta dasar. Tanpa berkas OSM, lintasan sumber dipakai apa adanya.
+const OSM_FILE = 'var/src/osm/rail.json';
+const osmJson = existsSync(OSM_FILE) ? JSON.parse(readFileSync(OSM_FILE, 'utf8')) : null;
+const osm = osmJson ? snapper(osmJson.elements || []) : null;
+const snapped = new Map();                              // potongan yang dipakai bersama beberapa jalur diselaraskan sekali
+function railOf(net, a, b, kind, zones) {
+  const raw = graph.get(net).get(a).get(b);
+  if (!osm || !kind) return { ...raw, unmatched: 0 };
+  const fwd = a < b, key = `${net}|${kind}|${zones.length}|${fwd ? a : b}|${fwd ? b : a}`;
+  if (!snapped.has(key)) {
+    const r = osm.snap(fwd ? raw.points : [...raw.points].reverse(), kind, zones);
+    let len = 0; for (let i = 1; i < r.points.length; i++) len += segLen(r.points[i - 1], r.points[i]);
+    snapped.set(key, { points: r.points, length: len, unmatched: r.unmatched });
+  }
+  const e = snapped.get(key);
+  return fwd ? e : { ...e, points: [...e.points].reverse() };
+}
+const alignment = [];                                   // laporan per jalur: selisih terhadap rel OSM sebelum dan sesudah
 // Stasiun bawah tanah (bukan dari berkas sumber): enam stasiun MRT Lin Utara-Selatan, Senayan sampai Bundaran HI.
 // Sumber dan pemeriksaan silang dengan tag tunnel OpenStreetMap: docs/ELEVASI.md. Tanda ini dipakai untuk kotak stasiun
 // dan tombol "Lihat di bawah tanah"; tinggi rel per ruas (layang / terowongan) dibangun data-build/elev.mjs, yang
@@ -114,17 +135,21 @@ for (const train of trains) {                           // pasangkan kereta ke l
 }
 trunks.forEach((T, ti) => {
   const line = sLines[T.li], sys = SYSTEMS[line.system], net = netOf(line.system);
-  const path = [], at = [0];                            // at[i] = meter pada simpul ke-i
+  const lineId = `${line.system}.${line.id.replaceAll(' ', '-')}.${ti}`;
+  const kind = KIND[line.system], zones = PREFER_UP.filter(z => lineId.startsWith(z.prefix)).map(z => [z.lng, z.lat, z.r]);
+  const path = [], rawPath = [], at = [0];              // at[i] = meter pada simpul ke-i
+  let unmatched = 0;
   T.nodes.forEach((n, i) => {
     if (!i) return;
-    const e = graph.get(net).get(T.nodes[i - 1]).get(n);
-    path.push(...e.points.slice(path.length ? 1 : 0)); at.push(at[i - 1] + e.length);
+    const e = railOf(net, T.nodes[i - 1], n, kind, zones);
+    path.push(...e.points.slice(path.length ? 1 : 0)); at.push(at[i - 1] + e.length); unmatched += e.unmatched;
+    rawPath.push(...graph.get(net).get(T.nodes[i - 1]).get(n).points.slice(rawPath.length ? 1 : 0));
   });
+  if (osm && kind) alignment.push({ id: lineId, before: osm.offset(rawPath, kind), after: osm.offset(path, kind), unmatched, points: [rawPath.length, path.length] });
   const stopped = new Set(trains.filter(t => t.trunk === ti).flatMap(t => t.pos));
   const siblings = trunks.filter(x => x.li === T.li).length;
   const name = n => stationById.get(n)?.name || n;
   const title = siblings > 1 ? `${line.name} (${name(T.nodes[0])}–${name(T.nodes.at(-1))})` : line.name;
-  const lineId = `${line.system}.${line.id.replaceAll(' ', '-')}.${ti}`;
   T.station = new Map();                                // posisi simpul -> indeks stasiun global
   const idx = [], chain = [], used = new Map();
   T.nodes.forEach((n, i) => {
@@ -153,7 +178,8 @@ const built = new Date().toISOString();
 const network = {
   v: 1, kind: 'tokyo-network',
   meta: { source: { name: 'trafik.live asset-krl', file: srcFile, obtained: built.slice(0, 10), url: 'https://trafik.live/kereta',
-    upstream: src.meta.source_url, license: src.meta.licence, attribution: src.meta.attribution, systems: src.meta.systems } },
+    upstream: src.meta.source_url, license: src.meta.licence, attribution: src.meta.attribution, systems: src.meta.systems },
+    ...(osm ? { alignment: { source: 'OpenStreetMap', license: 'ODbL 1.0', url: 'https://www.openstreetmap.org/copyright', osmBase: osmJson.osm3s?.timestamp_osm_base || null } } : {}) },
   fields: { lines: ['id', 'en', 'ja', 'color', 'code', 'op', 'cars', 'underground', 'loop', 'stations', 'path', 'chain', 'length', 'offset', 'lanes', 'ascending', 'descending', 'hidden', 'codes'],
     stations: ['id', 'line', 'en', 'ja', 'lng', 'lat', 'group', 'underground', 'code', 'alt', 'part', 'uen', 'uja'],
     types: ['id', 'en', 'ja', 'color', 'rank'], dirs: ['id', 'en', 'ja'], ops: ['id', 'en', 'ja', 'sen', 'sja'] },
@@ -214,3 +240,9 @@ console.log(`${srcFile} -> ${OUT}`);
 console.log(`jalur ${lines.length} (dari ${sLines.length} jalur sumber), stasiun ${stations.length}, kelompok ${groups.length}, kereta ${trains.length}, dilewati ${skipped.length}${skipped.length ? ` (${skipped.slice(0, 6).join(', ')})` : ''}`);
 for (const [c, v] of Object.entries(pointer.cals)) console.log(`  ${c}: ${v.runs} perjalanan, ${v.lines} jalur, ${v.buckets} berkas jam`);
 for (const l of lines) console.log(`  ${l[0].padEnd(22)} ${String(l[9].length).padStart(3)} stasiun ${(l[12] / 1000).toFixed(1).padStart(6)} km  ${l[1]}`);
+if (osm) {
+  const f = v => (v == null ? '   -' : v.toFixed(1).padStart(6));
+  console.log(`Trase diselaraskan ke rel OpenStreetMap (${OSM_FILE}, per ${osmJson.osm3s?.timestamp_osm_base || '?'}); selisih ke rel OSM terdekat, meter:`);
+  console.log(`  ${'jalur'.padEnd(22)} sebelum: rata2   maks | sesudah: rata2   maks | tanpa rel OSM (m) | titik`);
+  for (const a of alignment) console.log(`  ${a.id.padEnd(22)}          ${f(a.before.mean)} ${f(a.before.max)} |          ${f(a.after.mean)} ${f(a.after.max)} | ${String(a.unmatched).padStart(8)}          | ${a.points[0]} -> ${a.points[1]}`);
+} else console.log(`Trase TIDAK diselaraskan: tidak ada ${OSM_FILE} (jalankan sekali: bun data-build/elev.mjs --fetch). Lintasan sumber dipakai apa adanya.`);

@@ -31,8 +31,8 @@ const MIN_LEVEL_RUN = 250;  // m: perubahan `layer` lebih pendek dari ini = deta
 // Lintasan sumber kita melewati rel bawah Stasiun Manggarai, padahal KRL Lin Bogor memakai rel atas (jalur 10-13,
 // sejak 25 September 2021; https://en.wikipedia.org/wiki/Manggarai_railway_station). Di sekitar titik ini jalur
 // berawalan itu memilih rel layang OSM terdekat walau ada rel permukaan yang lebih dekat.
-const PREFER_UP = [{ prefix: 'krl.Bogor.', lng: 106.8498, lat: -6.21, r: 1200 }];
-const KIND = { mrt: 'subway', lrtj: 'light_rail', jbdb: 'light_rail', krl: 'rail', kai: 'rail' };   // awalan id jalur -> railway=*
+export const PREFER_UP = [{ prefix: 'krl.Bogor.', lng: 106.8498, lat: -6.21, r: 1200 }];
+export const KIND = { mrt: 'subway', lrtj: 'light_rail', jbdb: 'light_rail', krl: 'rail', kai: 'rail' };   // awalan id jalur -> railway=*
 
 /** Tingkat sebuah way: -1 terowongan, 0 permukaan, n >= 1 layang (nilai tag layer, minimal 1). */
 export function levelOf(tags = {}) {
@@ -43,11 +43,9 @@ export function levelOf(tags = {}) {
 }
 export const metres = (level) => (level < 0 ? H_TUNNEL : H_VIADUCT + H_LAYER * Math.max(0, level - 2));
 
-/**
- * Murni (tanpa berkas), supaya bisa diuji. net = hasil unpackNet (lines[].id/path/length); ways = elemen Overpass
- * ({ tags, geometry: [{lat, lon}] }). Hasil: { lines, len, report: [{ id, matched, runs: [[dariM, sampaiM, tingkat]], dropped: [...] }] }.
- */
-export function buildElev(net, ways) {
+/** Indeks ruas rel OSM per jenis (railway=*) dalam meter lokal. near(kind, x, y) = ruas [x0, y0, x1, y1, tingkat] di sel
+ * (100 m) titik itu dan delapan sel di sekitarnya (ruas panjang bisa muncul lebih dari sekali). Rel kereta cepat dan rel langsir dibuang. */
+export function indexWays(ways) {
   const LAT0 = -6.4, KX = 111320 * Math.cos(LAT0 * Math.PI / 180), KY = 110574, CELL = 100;
   const xy = (lng, lat) => [lng * KX, lat * KY];
   const grid = new Map();                              // 'kind:cx:cy' -> [[x0, y0, x1, y1, tingkat], ...]
@@ -69,10 +67,23 @@ export function buildElev(net, ways) {
       }
     }
   }
+  const near = (kind, x, y) => {
+    const out = [], cx = Math.floor(x / CELL), cy = Math.floor(y / CELL);
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) { const l = grid.get(`${kind}:${cx + i}:${cy + j}`); if (l) out.push(...l); }
+    return out;
+  };
+  return { xy, unxy: (x, y) => [x / KX, y / KY], near };
+}
+
+/**
+ * Murni (tanpa berkas), supaya bisa diuji. net = hasil unpackNet (lines[].id/path/length); ways = elemen Overpass
+ * ({ tags, geometry: [{lat, lon}] }). Hasil: { lines, len, report: [{ id, matched, runs: [[dariM, sampaiM, tingkat]], dropped: [...] }] }.
+ */
+export function buildElev(net, ways) {
+  const { xy, near } = indexWays(ways);
   const nearest = (kind, x, y, ux, uy, up) => {        // tingkat rel terdekat yang searah, atau null; up = utamakan rel layang
     let best = null, bd = R_MATCH, bestUp = null, bu = R_MATCH;
-    const cx = Math.floor(x / CELL), cy = Math.floor(y / CELL);
-    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const [x0, y0, x1, y1, lv] of grid.get(`${kind}:${cx + i}:${cy + j}`) || []) {
+    for (const [x0, y0, x1, y1, lv] of near(kind, x, y)) {
       const dx = x1 - x0, dy = y1 - y0, l2 = dx * dx + dy * dy || 1;
       if (Math.abs(dx * ux + dy * uy) / Math.sqrt(l2) < COS_MIN) continue;
       const f = Math.max(0, Math.min(1, ((x - x0) * dx + (y - y0) * dy) / l2));
@@ -82,7 +93,6 @@ export function buildElev(net, ways) {
     }
     return bestUp ?? best;
   };
-
   const lines = {}, len = {}, report = [];
   for (const line of net.lines) {
     const kind = KIND[String(line.id).split('.')[0]];
