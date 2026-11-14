@@ -65,6 +65,12 @@ const CLASSES = {
 /** Per line: [id or 'Prefix.*', class, livery style, body colour ('line' = the line's own colour, '#hex', null = metal)].
  * Small and factual; the line-colour stripe on a metal body is the default for every line not listed. */
 const LINE_TABLE = [
+  // Jakarta (id jalur dari data-build/jakarta.mjs: '<sistem>.<jalur>.<n>'). Warna badan dari pengamatan umum, hex perkiraan.
+  ['krl.*', 'jr20', LIVERY.STRIPE, null],                       // KRL: badan baja nirkarat eks-JR 20 m, strip warna jalur
+  ['mrt.*', 'm20', LIVERY.STRIPE, null],                        // MRT Jakarta: baja nirkarat, strip biru (lihat ACCENT_3D di vehicles.js)
+  ['lrtj.*', 'tram', LIVERY.STRIPE, '#F4F4F2'],                 // LRT Jakarta: badan putih, strip jingga, kereta pendek
+  ['jbdb.*', 'm18', LIVERY.STRIPE, '#F4F4F2'],                  // LRT Jabodebek: badan putih
+  ['kai.*', 'jr20', LIVERY.STRIPE, '#F4F4F2'],                  // KA antarkota: badan putih
   ['TokyoMetro.Ginza', 'g16', LIVERY.FULL, '#FFC81E'],          // 1000 series: lemon-yellow body (hex approx.)
   ['TokyoMetro.Marunouchi', 'm18', LIVERY.WAVE, 'line'],        // 2000 series: red body, white band + sine wave
   ['TokyoMetro.MarunouchiBranch', 'm18', LIVERY.WAVE, 'line'],
@@ -106,7 +112,7 @@ export function lineLook(lineId) {
   for (const row of LINE_TABLE) { if (row[0] === id) { hit = row; break; } }
   if (!hit) { const op = id.split('.')[0]; for (const row of LINE_TABLE) if (row[0] === `${op}.*`) { hit = row; break; } }
   const cls = hit ? hit[1] : 'm20';
-  return { cls, style: hit ? hit[2] : LIVERY.STRIPE, body: hit ? hit[3] : null, third: THIRD_RAIL.has(id) || cls === 'agt' };
+  return { cls, style: hit ? hit[2] : LIVERY.STRIPE, body: hit ? hit[3] : null, third: THIRD_RAIL.has(id) || cls === 'agt' || /^(lrtj|jbdb)\./.test(id) };   // kedua LRT memakai rel ketiga
 }
 
 /** Derived heights of a class (all in metres above the rail top). */

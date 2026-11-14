@@ -48,6 +48,8 @@ export const UNDER_M = -2;                 // a car this far below ground is und
 export const OVER_M = 1, OVER_LIFT = 0.45;  // track this far up gets its line's colour along the deck top, a little above it
 const FAINT_SURFACE = 0.32, FAINT_UNDER = 0.3, VEIL = [0.962, 0.966, 0.973, 0.72];
 const FAINT_SURFACE_UG = 0.05;            // surface trains in the underground view: a whisper of grey (they were 0.16: noise)
+// Warna strip kereta 3D bila berbeda dari warna jalurnya di peta: kereta MRT Jakarta berstrip biru, sedangkan jalurnya merah.
+const ACCENT_3D = { mrt: [0.04, 0.3, 0.64] };
 const GHOST = [0.667, 0.667, 0.69];   // faint trains: the rest network's neutral grey (network-layer.js REST)
 /** The underground view draws depth this many times deeper than the heights build's metres (levels 3-10 m apart read as 1-6 px
  * otherwise); the surface view and every height above ground stay true. */
@@ -473,7 +475,7 @@ export function createTrains3d(opts) {
         // a faint train is a neutral grey ghost (the network's rest grey), never its line colour faded: official line
         // colours are shown exact or not at all; the picked train keeps its colour, solid
         const ghost = faint && !sel;
-        const [r, g, b] = ghost ? GHOST : look?.body ? rgbCached(look.body) : colours[tr.line] || [0.55, 0.57, 0.6];
+        const [r, g, b] = ghost ? GHOST : ACCENT_3D[line.id.split('.')[0]] || (look?.body ? rgbCached(look.body) : colours[tr.line] || [0.55, 0.57, 0.6]);
         const band = !ghost && look?.band && look.band !== look.body ? packed(look.band) : -1;
         const bandH = band >= 0 ? 0.1 + 0.12 * Math.min(1, Math.max(0, look.weight ?? 0.5)) : 0;
         const alphaCar = faint && sel ? 1 : alpha;
@@ -626,7 +628,7 @@ export function createTrains3d(opts) {
         if (!lod) l0++;
         const sy = data[i + 7] / CAR_W, sz = Math.max(1, data[i + 8] / CAR_H);
         const fl = (data[i + 13] >= 4 ? TSF.PICKED : 0) | (q < nLive ? TSF.LIVE : 0);
-        const [r0, g0, b0] = colours[tr.line] || [0.55, 0.57, 0.6];
+        const [r0, g0, b0] = ACCENT_3D[String(lines[tr.line]?.id).split('.')[0]] || colours[tr.line] || [0.55, 0.57, 0.6];
         ts.push(spec, lod, X, Y, zr, data[i + 3], data[i + 4], data[i + 5], sy, sz, r0, g0, b0, 1, fl, data[i + 14]);
       }
       st.lod0 = l0; st.eyeSkip = skipped;
