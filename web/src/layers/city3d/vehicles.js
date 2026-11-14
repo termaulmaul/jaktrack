@@ -376,7 +376,9 @@ export function createTrains3d(opts) {
   const rails = opts.rails ? railsOf(net, opts.rails) : null;
   // the trains are drawn wider than life when zoomed out (kw), and so is their track spacing; in quarter steps, so the
   // route ribbon (built for the same factor) stays under its train
-  const wide = (kw) => Math.round(Math.max(1, kw * 0.9) * 4) / 4;
+  // dibulatkan KE ATAS dari kw penuh: jarak rel melebar paling sedikit secepat badan kereta (W = CAR_W * kw), supaya dua
+  // kereta berpapasan tidak pernah saling menutupi pada zoom mana pun (dulu kw * 0,9 dibulatkan: bisa lebih sempit dari badan)
+  const wide = (kw) => Math.ceil(Math.max(1, kw) * 4) / 4;
   const leftOf = (li, mChain, kw) => (rails ? rails.offset(li, mChain) * wide(kw) : 0);   // m left of travel
   const tubeSide = (li) => (rails && rails.hand(li) > 0 ? -1 : 1);   // keep right: the right-hand bore / box track
   // the picked line's wide ribbon: its VAO, and what it was built for (line, the open train's direction or 0 = both tracks)

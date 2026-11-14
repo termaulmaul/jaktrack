@@ -66,3 +66,11 @@ test('pemisahan arah: di ruas ganda dua kereta berlawanan arah di rel berbeda, d
   expect(R.has(1)).toBe(false); expect(R.offset(1, 1000)).toBe(0);
   expect(railsOf(net, null).offset(0, 1000)).toBe(0);
 });
+
+test('dua kereta berpapasan di jalur ganda tidak pernah saling menutupi', async () => {
+  const { MIN_HALF_M } = await import('../web/src/tokyo/rails.js');
+  const { CAR_W } = await import('../web/src/layers/city3d/vehicles.js');
+  // jarak sumbu dua rel = 2 * half * wide(kw); lebar badan = CAR_W * kw; wide(kw) >= kw
+  const wide = (kw) => Math.ceil(Math.max(1, kw) * 4) / 4;
+  for (const kw of [1, 1.1, 1.3, 2, 3.7, 6]) expect(2 * MIN_HALF_M * wide(kw) - CAR_W * kw).toBeGreaterThan(0.9);
+});
