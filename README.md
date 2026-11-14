@@ -2,14 +2,49 @@
 
 Riset untuk pelacak transportasi umum Jakarta: bus TransJakarta, kereta (KRL, MRT, LRT), dan data pendukung seperti CCTV lalu lintas dan tinggi air sungai.
 
-> **Status: tahap riset. Belum ada kode aplikasi di repo ini.**
-> Isinya saat ini adalah catatan hasil mempelajari cara kerja satu situs sejenis, [trafik.live](https://trafik.live) ("Bus Jakarta Live"), sebagai bahan rancangan.
+> **Status: purwarupa awal.** Peta 2D yang menampilkan bus TransJakarta hasil **simulasi dari jadwal resmi**, bukan posisi asli.
+> Rancangannya mengikuti hasil mempelajari [trafik.live](https://trafik.live) dan kode terbuka [tokyo-rail-twin](https://github.com/lucacadalora/tokyo-rail-twin) (MIT) dari tim yang sama.
+
+## Menjalankan
+
+Butuh Node.js 20 ke atas, Python 3, dan perintah `unzip`.
+
+```bash
+npm run data   # unduh GTFS resmi TransJakarta (2,5 MB), bangun web/data/jakarta.json
+npm run dev    # buka http://127.0.0.1:4777
+npm test       # uji modul simulasi
+```
+
+Repo ini hanya berisi kode. Data dibangun di mesin sendiri dari sumber resminya dan tidak ikut di-commit.
+
+## Cara kerja
+
+```
+GTFS TransJakarta ─► data-build/build.mjs ─► web/data/jakarta.json ─► web/sim.js ─► MapLibre GL
+   (unduh sekali)      rute, bentuk jalur,       (1,9 MB, statis)      posisi tiap     (peta dasar
+                       waktu antar-halte,                              bus per detik    OpenFreeMap)
+                       headway
+```
+
+- GTFS TransJakarta berbasis frekuensi: tiap pola perjalanan punya waktu tempuh antar-halte dan jarak antar-keberangkatan (headway), bukan jadwal per bus.
+- Simulator menganggap satu bus berangkat tiap headway, lalu menaruhnya di jalur sesuai waktu yang sudah berlalu.
+- Semua dihitung di browser. Tidak ada server selain penyaji berkas statis.
+
+## Keterbatasan yang diketahui
+
+- **Bukan posisi asli.** Tidak ada data GPS armada; kemacetan dan keterlambatan tidak tercermin.
+- **Jumlah bus terlalu tinggi.** Simulator membaca GTFS apa adanya dan menghasilkan ±5.700 bus pada Sabtu malam, sedangkan trafik.live menampilkan ±3.100 pada waktu yang sama. Banyak pola di GTFS dinyatakan beroperasi 00.00–23.59, sehingga bus tetap muncul dini hari. Cara trafik.live menyaringnya belum diketahui.
+- **Hanya bus.** Kereta, halte, pencarian, dan tampilan 3D belum ada.
+- **Kalender dinilai saat build.** Hari libur nasional tidak diperhitungkan (GTFS ini tidak punya `calendar_dates`).
 
 ## Isi repo
 
 | Berkas | Isi |
 |---|---|
 | [`KNOWLEDGE.md`](KNOWLEDGE.md) | Catatan lengkap: arsitektur, sumber data, format data, protokol live, dan catatan tiap halaman trafik.live |
+| `data-build/build.mjs` | Pembangun data: GTFS → `web/data/jakarta.json` |
+| `web/sim.js`, `web/sim.test.mjs` | Simulasi posisi bus dari jadwal, dan ujinya |
+| `web/index.html`, `web/app.js` | Halaman peta |
 | `README.md` | Ringkasan ini |
 
 ## Temuan utama
@@ -69,7 +104,7 @@ Rinciannya, termasuk bentuk tiap pesan dan endpoint, ada di [`KNOWLEDGE.md`](KNO
 | Deteksi dari CCTV | GPU kelas atas, izin pemilik kamera | Posisi nyata sebagian, hanya di titik yang ada kamera |
 | Feed resmi operator | Kerja sama dengan TransJakarta | Posisi nyata; belum diketahui tersedia atau tidak |
 
-Belum ada keputusan rancangan. Langkah berikutnya adalah menentukan data mana yang jaktrack tampilkan dan dari sumber mana.
+Yang dipilih untuk purwarupa ini adalah baris pertama: simulasi dari jadwal.
 
 ## Metode dan batasan riset
 
