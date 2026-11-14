@@ -9,6 +9,7 @@
 // look until style.js's web/src/tokyo/style.js lands).
 import maplibregl from 'maplibre-gl';
 import { injectCss } from './chrome.js';
+import { mountTrackpad } from './trackpad.js';
 
 const reduceMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -72,6 +73,8 @@ export async function createTokyoMap(opts = {}) {
     opts.onReady?.(false);
     return stub();
   }
+
+  mountTrackpad(map);   // gestur touchpad: docs/GESTUR.md
 
   let loaded = false;
   let want3D = false;
