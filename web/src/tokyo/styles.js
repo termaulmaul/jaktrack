@@ -126,15 +126,13 @@ export default `${base}${krl}
 .tk-app .eyebrow{font-size:13px;line-height:16px}
 .tk-app .badge.tk-badge{font-size:13px;line-height:16px;height:24px}
 .tk-alt{font-size:13px}
-/* the phone handle's credit line reads at 13 px on its own row under the grabber
-   (9 px beside the grabber touched it at 390 px, and 13 px there runs into it); narrow phones wrap the map credit.
+/* phones: only the short map credit stays on the handle, small and to the right of the grabber (no row of its own:
+   it took a full line of the sheet). The disclaimer lives in About and the desktop footer.
    Phones only: the docked pane (desktop, phones sideways) hides the handle. */
 @media (max-width:899px){
 .tk-app .grab{height:auto;display:block;justify-items:normal;padding:8px 14px 9px}
 .tk-app .grabber{display:block;margin:0 auto}
-.tk-app .grab .credit{position:static;flex-wrap:wrap;justify-content:center;gap:0 6px;margin-top:5px;font:400 13px/17px var(--font);color:var(--text3)}
-.tk-app .grab .credit span:last-child{margin-left:0}
-.tk-app .grab .credit span:first-child::after{content:"·";margin-left:6px}
+.tk-app .grab .credit{position:absolute;left:auto;right:14px;top:4px;margin:0;font:400 11px/14px var(--font);color:var(--text3)}
 /* the OSM link is a 44 px tall target that stays inside the handle (never over the search field under it) */
 .tk-app .grab .credit a{display:inline-block;padding:18px 0 9px;margin:-18px 0 -9px}
 }
