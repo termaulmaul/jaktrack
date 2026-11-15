@@ -20,6 +20,7 @@ import {
   operatorOf, runningByOperator, serviceTime, stationBoard,
 } from './board.js';
 import { suspendedOf } from './model.js';
+import { logoPlate } from './logos.js';
 
 // ------------------------------------------------------------------ the board's own CSS (once, on first import)
 export const BOARD_CSS = `
@@ -148,7 +149,7 @@ const STATION_SVG = '<svg class="i kr-sg" viewBox="0 0 24 24" aria-hidden="true"
 const stationTile = () => `<span class="etile kr-stile" aria-hidden="true">${STATION_SVG}</span>`;
 const STAR = '<svg class="kr-star" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3.5 2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.8L12 3.5Z"/></svg>';
 
-const sec = (head, small, body) => `<section class="sec"><div class="sech"><h2>${esc(head)}</h2>${small ? `<small>${esc(small)}</small>` : ''}</div>${body}</section>`;
+const sec = (head, small, body, lead = '') => `<section class="sec"><div class="sech"><h2>${lead}${esc(head)}</h2>${small ? `<small>${esc(small)}</small>` : ''}</div>${body}</section>`;
 const list = (rows) => `<div class="list">${rows.join('')}</div>`;
 const note = (html) => `<p class="kr-note">${html}</p>`;
 function placeHead({ lead, titleHtml, sub = '', close = true }) {
@@ -758,6 +759,8 @@ const OP_MARK = { 'JR-East': 'JR', 'JR-Central': 'JR', TokyoMetro: 'M', Toei: '�
   TokyoMonorail: 'MO', SaitamaRailway: 'SR', ToyoRapid: 'TR' };
 const initials = (s) => String(s || '').split(/[\s\-()]+/).filter((w) => /^[A-Za-z]/.test(w)).slice(0, 2).map((w) => w[0].toUpperCase()).join('');
 const opTile = (opId, opTitle) => {
+  const logo = logoPlate(opId, opText({ id: opId, title: opTitle }));   // the operator's own logo where we have one
+  if (logo) return logo;
   const mk = OP_MARK[opId] || initials(opTitle?.en || opId) || '·';
   // a kanji mark (都) is Japanese text inside an EN / ID page: lang so a screen reader / the fonts read it as Japanese
   return `<span class="tb-opt" data-op="${esc(opId)}" aria-hidden="true"${/[^\x00-\x7F]/.test(mk) ? ' lang="ja"' : ''}>${esc(mk)}</span>`;
@@ -873,7 +876,7 @@ export function linesView(ctx) {
       return `<button type="button" class="row" data-line="${esc(l.id)}" aria-label="${esc(`${lnName(m, i)}, ${tn('n.running', n)}`)}">${disc(ctx, l)}<span class="rt"><b>${esc(lnName(m, i))}${altSpan(l.title)}</b><span>${sev}${esc(`${rhythmText(rh, ms, m, n)} · ${tn('n.stations', stations)}`)}</span></span><span class="rr"><span class="big">${esc(fmtNum(n))}</span><small>${esc(t('board.trains.word', { n }))}</small></span>${icon('chev', 'chev')}</button>`;
     });
     const k = chipOf(op.id);
-    return sec(opText(op), tn('n.lines', fams.length), list(rows)).replace('<section class="sec"', `<section class="sec" data-opgrp="${k}"${opg && opg !== k ? ' hidden' : ''}`);
+    return sec(opText(op), tn('n.lines', fams.length), list(rows), logoPlate(op.id, opText(op), 'sm')).replace('<section class="sec"', `<section class="sec" data-opgrp="${k}"${opg && opg !== k ? ' hidden' : ''}`);
   }).join('');
   // TransJakarta: the bus routes (buses/browse.js, once the bus pack is in), else a row that switches the bus layer on
   let tj = '';

@@ -5,6 +5,7 @@
 // history and Back work unchanged).
 import { busT, escHtml as esc, clockFor } from './view.js';
 import { headwayNow, nextArrival } from './sim.js';
+import { logoPlate } from '../logos.js';
 
 // GTFS routes.txt route_desc -> the chip's label. The values are the feed's own; only two are shortened.
 export const KINDS = [
@@ -55,7 +56,7 @@ export function linesHtml(B, ctx = {}) {
   const t = busT(ctx.lang, ctx.t), ms = ctx.now ?? Date.now();
   const list = B.kind ? B.routes.filter((r) => r.kind === B.kind) : B.routes;
   const rows = list.map((r) => routeRow(r, r.name || r.tag, `${kindLabel(r.kind)} · ${everyText(t, routeHeadway(B, r, ms))}`));
-  return `<section class="sec" data-opgrp="tj"${ctx.hidden ? ' hidden' : ''}><div class="sech"><h2>TransJakarta</h2><small>${esc(t('bus.routes.sub', { n: list.length }))}</small></div>${kindChips(B, t)}<div class="list">${rows.join('')}</div></section>`;
+  return `<section class="sec" data-opgrp="tj"${ctx.hidden ? ' hidden' : ''}><div class="sech"><h2>${logoPlate('TransJakarta', 'TransJakarta', 'sm')}TransJakarta</h2><small>${esc(t('bus.routes.sub', { n: list.length }))}</small></div>${kindChips(B, t)}<div class="list">${rows.join('')}</div></section>`;
 }
 
 const closeBtn = (ctx, t) => (ctx.close ? `<button type="button" class="xbtn" data-act="back" aria-label="${esc(t('close'))}"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>` : '');

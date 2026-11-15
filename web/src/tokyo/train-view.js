@@ -18,6 +18,7 @@ import { icon } from '../app/ui.js';
 import { clock, clockMs, has, lang, t, title, titleAlt, tn } from './i18n.js';
 import { DAY, liveDelay, position, serviceTime, trainClock } from './model.js';
 import { lineChip as tkLineChip, typeChip as tkTypeChip, typeStyle } from './types.js';
+import { logoPlate } from './logos.js';
 
 // ------------------------------------------------------------------ lookups
 const runIdx = new WeakMap();
@@ -482,7 +483,8 @@ export function trainView(m, ref, ms = Date.now(), st = {}, api = {}, desktop = 
   const sub = [lName(m, live.line), op && op !== lName(m, live.line) ? op : '', hl.to].filter(Boolean).join(' · ');
   const cars = carsOf(m, live);
   const meta = [typeChip(m, live), live.number ? `<span class="tv-chip">${esc(t('train.no', { no: live.number }))}</span>` : '',
-    cars ? `<span class="tv-chip">${esc(tn('tv.cars', cars))}</span>` : '', live.vehicle ? `<span class="tv-chip">${esc(live.vehicle)}</span>` : ''].filter(Boolean).join('');
+    cars ? `<span class="tv-chip">${esc(tn('tv.cars', cars))}</span>` : '', live.vehicle ? `<span class="tv-chip">${esc(live.vehicle)}</span>` : '',
+    logoPlate((m.operators || m.ops)?.[m.lines[live.line]?.op]?.id, opName(m, live.line), 'sm')].filter(Boolean).join('');
   const following = st.follow ? !!st.follow.on : !!st.following;
   const onMap = !!w.pos || w.state === 'at';
   const followBtn = st.canFollow === false || !onMap ? ''
@@ -634,6 +636,7 @@ export const css = `
 .tv-ring.xs[data-len="3"] b{font-size:6px}
 .tv-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;min-width:0}
 .tv-meta .tk-type{height:28px;padding:0 11px;font-size:13px}
+.tv-meta .tk-logo{margin-left:auto}
 .tv-chip{display:inline-flex;align-items:center;height:28px;padding:0 2px;background:none;font:400 13px/1 var(--font);color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap}
 .tv-chip+.tv-chip::before{content:"·";margin-right:6px;color:var(--text3)}
 .tv-type.on{background:var(--tc);color:#FFFFFF}

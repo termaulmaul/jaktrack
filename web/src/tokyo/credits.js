@@ -182,6 +182,8 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
       elevText: 'Track heights (viaducts and tunnels in 3D): derived from the bridge, tunnel and layer tags of railway ways \u00a9 OpenStreetMap contributors, ODbL. Heights in metres are estimates.',
       gsi: 'Ground heights',   // the 3D tunnel depths (elev-v2, npm run data:3d) use GSI elevation tiles
       gsiText: 'Ground heights: Geospatial Information Authority of Japan (GSI) elevation tiles, processed (used for the underground view\u2019s tunnel depths).',
+      logos: 'Operator logos',
+      logosText: `The logos of KAI, KAI Commuter, MRT Jakarta, LRT Jakarta, LRT Jabodebek and TransJakarta come from Wikimedia Commons, which lists them as public domain (simple text logos). They only mark which operator runs a line or a bus. The trademarks remain their owners\u2019; ${APP_NAME} is not affiliated with them.`,
       na: 'Not affiliated',
       naText: 'Not affiliated with KAI, KAI Commuter, MRT Jakarta, LRT Jakarta, trafik.live, Open-KRL or any railway operator. Times are planned times, not live positions.',
       lic: 'Licences',
@@ -203,6 +205,8 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
       elevText: 'Track heights (viaducts and tunnels in 3D): derived from the bridge, tunnel and layer tags of railway ways \u00a9 OpenStreetMap contributors, ODbL. Heights in metres are estimates.',
       gsi: '標高',
       gsiText: '出典：国土地理院（地理院タイル 標高タイル DEM5A・DEM5B・DEM10B）を加工して作成（地下表示のトンネルの深さに利用）',
+      logos: '事業者のロゴ',
+      logosText: `The logos of KAI, KAI Commuter, MRT Jakarta, LRT Jakarta, LRT Jabodebek and TransJakarta come from Wikimedia Commons, which lists them as public domain (simple text logos). They only mark which operator runs a line or a bus. The trademarks remain their owners\u2019; ${APP_NAME} is not affiliated with them.`,
       na: '提携関係',
       naText: 'Not affiliated with KAI, KAI Commuter, MRT Jakarta, LRT Jakarta, trafik.live, Open-KRL or any railway operator. Times are planned times, not live positions.',
       lic: 'ライセンス',
@@ -224,6 +228,8 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
       elevText: 'Ketinggian rel (viaduk dan terowongan di 3D): diturunkan dari tag bridge, tunnel, dan layer pada way rel \u00a9 kontributor OpenStreetMap, ODbL. Angka meternya perkiraan.',
       gsi: 'Ketinggian tanah',
       gsiText: 'Ketinggian tanah: ubin elevasi Geospatial Information Authority of Japan (GSI), diolah (dipakai untuk kedalaman terowongan di tampilan bawah tanah).',
+      logos: 'Logo operator',
+      logosText: `Logo KAI, KAI Commuter, MRT Jakarta, LRT Jakarta, LRT Jabodebek, dan TransJakarta diambil dari Wikimedia Commons, yang mencatatnya sebagai domain publik karena berupa logo teks sederhana. Logo hanya menandai operator sebuah jalur atau bus. Mereknya tetap milik pemiliknya masing-masing, dan ${APP_NAME} tidak berafiliasi dengan mereka.`,
       na: 'Afiliasi',
       naText: 'Tidak berafiliasi dengan KAI, KAI Commuter, MRT Jakarta, LRT Jakarta, trafik.live, Open-KRL, atau operator kereta mana pun. Waktu yang tampil adalah waktu rencana, bukan posisi langsung.',
       lic: 'Lisensi',
@@ -241,6 +247,7 @@ export function creditsFor(lang = 'en', source = null, opts = {}) {
       ...(BASEMAP === 'protomaps' ? [{ href: URLS.protomaps, label: 'protomaps.com' }] : [{ href: URLS.openfreemap, label: 'openfreemap.org' }, { href: URLS.openmaptiles, label: 'openmaptiles.org' }]),
       { href: URLS.maplibre, label: 'maplibre.org' }] },
     ...(opts?.gsi ? [{ key: 'gsi', head: T.gsi, lines: [T.gsiText], links: [{ href: 'https://maps.gsi.go.jp/development/ichiran.html', label: 'maps.gsi.go.jp' }] }] : []),
+    { key: 'logos', head: T.logos, lines: [T.logosText], links: [{ href: 'https://commons.wikimedia.org/', label: 'commons.wikimedia.org' }] },
     { key: 'na', head: T.na, lines: [T.naText], links: [] },
     { key: 'lic', head: T.lic, lines: [T.licText], links: [{ href: URLS.licenses, label: 'LICENSES.txt' }] },
   ];
@@ -270,9 +277,9 @@ export const attributionHtml = `<a href="${URLS.osm}" target="_blank" rel="noope
   ? `<a href="${URLS.protomaps}" target="_blank" rel="noopener">Protomaps</a>`
   : `<a href="${URLS.openfreemap}" target="_blank" rel="noopener">OpenFreeMap</a> © <a href="${URLS.openmaptiles}" target="_blank" rel="noopener">OpenMapTiles</a>`}`;
 export const footer = {
-  en: 'Timetable positions, not live · Data: Open-KRL (CC BY 4.0) via trafik.live · Map © OpenStreetMap contributors',
-  ja: 'Timetable positions, not live · Data: Open-KRL (CC BY 4.0) via trafik.live · Map © OpenStreetMap contributors',
-  id: 'Posisi menurut jadwal, bukan posisi langsung · Data: Open-KRL (CC BY 4.0) lewat trafik.live · Peta © kontributor OpenStreetMap',
+  en: 'Timetable positions, not live · Data: Open-KRL (CC BY 4.0) via trafik.live · Map © OpenStreetMap contributors · Not affiliated with any operator',
+  ja: 'Timetable positions, not live · Data: Open-KRL (CC BY 4.0) via trafik.live · Map © OpenStreetMap contributors · Not affiliated with any operator',
+  id: 'Posisi menurut jadwal, bukan posisi langsung · Data: Open-KRL (CC BY 4.0) lewat trafik.live · Peta © kontributor OpenStreetMap · Tidak berafiliasi dengan operator',
 };
 
 // ------------------------------------------------------------------ HTML for page.js's About

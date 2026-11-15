@@ -304,6 +304,17 @@ a.row:active, a.row:focus-visible { background: var(--elevated); outline-offset:
 .xbtn:active { background: var(--elevated); }
 .meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 10px; min-width: 0; }
 .plate { display: inline-flex; align-items: center; height: 28px; padding: 0 10px; border-radius: 8px; background: var(--elevated); box-shadow: inset 0 0 0 1px rgba(23, 23, 23, 0.07); font: 600 14px/1 var(--mono); letter-spacing: 0.03em; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* An operator's logo (web/src/tokyo/logos.js): white like the ground the logos are drawn for, the hairline of .plate so
+   the plate keeps its edge on the grey list; a rectangle because three of the six are wide wordmarks */
+.tk-logo { flex: none; display: inline-flex; align-items: center; justify-content: center; background: #FFFFFF; border-radius: 8px; box-shadow: inset 0 0 0 1px rgba(23, 23, 23, 0.07); }
+.tk-logo img { display: block; width: 100%; height: 100%; object-fit: contain; overflow: hidden; font: 500 9px/1.1 var(--font); color: var(--text2); }
+.tk-logo-row { width: 64px; height: 40px; padding: 7px 4px; }
+/* the two compact marks would fill the full 26 px height and outweigh the wordmarks beside them */
+.tk-logo-row[data-op="MRT-Jakarta"] img, .tk-logo-row[data-op="KAI"] img { height: 21px; }
+.row + .row:has(> .tk-logo-row)::before { left: 86px; }   /* the row line starts at the text, as beside a 40 px tile */
+.tk-logo-sm { width: 52px; height: 28px; padding: 4px; border-radius: 6px; vertical-align: middle; }
+.tk-logo-sm[data-op="MRT-Jakarta"] img, .tk-logo-sm[data-op="KAI"] img { height: 16px; }
+.sech h2 .tk-logo { margin-right: 8px; }
 .meta .caption { color: var(--text2); }
 .livedot { display: inline-block; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--income); }
 .livedot.old { background: #E8A33D; }

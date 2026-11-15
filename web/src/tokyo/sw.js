@@ -164,7 +164,7 @@ on('fetch', (event) => {
   if (p.startsWith('/data/tokyo/')) return event.respondWith(HASHED.test(p) || url.searchParams.has('h') ? cacheFirst(event, DATA) : networkFirst(event, DATA, DATA_MS));
   if (p.startsWith('/tiles/')) return event.respondWith(cacheFirst(event, TILES));
   if (p === '/api/tokyo/live.json') return event.respondWith(live(event));
-  if (SHELL_PATHS.has(p)) return event.respondWith(networkFirst(event, APP, DATA_MS));
+  if (SHELL_PATHS.has(p) || p.startsWith('/logos/')) return event.respondWith(networkFirst(event, APP, DATA_MS));   // logos: kept for offline once seen
   return undefined;   // anything else: the browser fetches it as usual
 });
 
