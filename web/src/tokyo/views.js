@@ -775,13 +775,13 @@ export function homeView(ctx) {
   const rows = r.ops.map((o) => {
     const top = o.lines.slice(0, 2).map((x) => `${lnName(m, x.line)} ${fmtNum(x.n)}`).join(' · ');
     const opn = opText({ id: o.op, title: o.title });
-    return `<button type="button" class="row" data-tab="lines" aria-label="${esc(`${opn}, ${tn('n.trains', o.n)}`)}">${opTile(o.op, o.title)}<span class="rt"><b>${esc(opn)}</b><span>${esc(`${tn('n.lines', o.lines.length)} · ${top}`)}</span></span><span class="rr"><span class="big">${esc(fmtNum(o.n))}</span><small>${esc(t('board.trains.word'))}</small></span></button>`;
+    return `<button type="button" class="row" data-tab="lines" aria-label="${esc(`${opn}, ${tn('n.trains', o.n)}`)}">${opTile(o.op, o.title)}<span class="rt"><b>${esc(opn)}</b><span>${esc(`${tn('n.lines', o.lines.length)} · ${top}`)}</span></span><span class="rr"><span class="big">${esc(fmtNum(o.n))}</span><small>${esc(t('board.trains.word', { n: o.n }))}</small></span></button>`;
   });
   // TransJakarta: buses simulated from the GTFS timetable (web/src/tokyo/buses/). Its own row and its own count, never
   // added to the trains; only when the bus pack was built (ctx.tj). A tap switches the bus layer on and shows the map.
   if (ctx.tj) {
     const n = ctx.tj.on && Number.isFinite(ctx.tj.n) ? ctx.tj.n : null, sub = t(ctx.tj.on ? 'bus.row.sub' : 'bus.row.off');
-    rows.unshift(`<button type="button" class="row" data-act="buses-map" aria-label="${esc(`TransJakarta, ${n != null ? `${fmtNum(n)} ${t('bus.word')}, ` : ''}${sub}`)}">${opTile('TransJakarta', { en: 'TransJakarta' })}<span class="rt"><b>TransJakarta</b><span>${esc(sub)}</span></span>${n != null ? `<span class="rr"><span class="big">${esc(fmtNum(n))}</span><small>${esc(t('bus.word'))}</small></span>` : ''}</button>`);
+    rows.unshift(`<button type="button" class="row" data-act="buses-map" aria-label="${esc(`TransJakarta, ${n != null ? `${fmtNum(n)} ${t('bus.word', { n })}, ` : ''}${sub}`)}">${opTile('TransJakarta', { en: 'TransJakarta' })}<span class="rt"><b>TransJakarta</b><span>${esc(sub)}</span></span>${n != null ? `<span class="rr"><span class="big">${esc(fmtNum(n))}</span><small>${esc(t('bus.word', { n }))}</small></span>` : ''}</button>`);
   }
   return `${nowBlock(ctx, m, ms, r, 'home')}
     ${serviceBlock(ctx, m)}
@@ -870,7 +870,7 @@ export function linesView(ctx) {
       const sev = members.map((x) => sevBit(ctx, m, x)).find(Boolean) || '';
       const susp = members.every((x) => suspendedOf(m, x)) ? suspendedOf(m, i) : null;   // suspended: the words, no count
       if (susp) return `<button type="button" class="row" data-line="${esc(l.id)}" aria-label="${esc(`${lnName(m, i)}, ${suspWords(susp)}`)}">${disc(ctx, l)}<span class="rt"><b>${esc(lnName(m, i))}${altSpan(l.title)}</b><span><span class="tb-sevbit" data-sev="suspended">${sevIcon('suspended')}${esc(suspWords(susp))}</span> · ${esc(tn('n.stations', stations))}</span></span>${icon('chev', 'chev')}</button>`;
-      return `<button type="button" class="row" data-line="${esc(l.id)}" aria-label="${esc(`${lnName(m, i)}, ${tn('n.running', n)}`)}">${disc(ctx, l)}<span class="rt"><b>${esc(lnName(m, i))}${altSpan(l.title)}</b><span>${sev}${esc(`${rhythmText(rh, ms, m, n)} · ${tn('n.stations', stations)}`)}</span></span><span class="rr"><span class="big">${esc(fmtNum(n))}</span><small>${esc(t('board.trains.word'))}</small></span>${icon('chev', 'chev')}</button>`;
+      return `<button type="button" class="row" data-line="${esc(l.id)}" aria-label="${esc(`${lnName(m, i)}, ${tn('n.running', n)}`)}">${disc(ctx, l)}<span class="rt"><b>${esc(lnName(m, i))}${altSpan(l.title)}</b><span>${sev}${esc(`${rhythmText(rh, ms, m, n)} · ${tn('n.stations', stations)}`)}</span></span><span class="rr"><span class="big">${esc(fmtNum(n))}</span><small>${esc(t('board.trains.word', { n }))}</small></span>${icon('chev', 'chev')}</button>`;
     });
     const k = chipOf(op.id);
     return sec(opText(op), tn('n.lines', fams.length), list(rows)).replace('<section class="sec"', `<section class="sec" data-opgrp="${k}"${opg && opg !== k ? ' hidden' : ''}`);
@@ -905,7 +905,7 @@ export function rhythmBlock(ctx, lineId) {
     const head = dirLabel(m, d.dir);
     const gap = d.gap ? t('board.every', { n: fmtNum(d.gap) }) : d.perHour === 1 ? t('board.hour.one') : d.next ? t('board.next.at', { time: clock(d.next.time) }) : t('board.notrains');
     const at = d.ref != null ? t('board.read.at', { name: stName(m, d.ref) }) : '';
-    return `<div class="row"><span class="rt"><b>${esc(head)}</b><span>${esc([gap, at].filter(Boolean).join(' · '))}</span></span><span class="rr"><span class="big">${esc(fmtNum(d.running))}</span><small>${esc(t('board.trains.word'))}</small></span></div>`;
+    return `<div class="row"><span class="rt"><b>${esc(head)}</b><span>${esc([gap, at].filter(Boolean).join(' · '))}</span></span><span class="rr"><span class="big">${esc(fmtNum(d.running))}</span><small>${esc(t('board.trains.word', { n: d.running }))}</small></span></div>`;
   });
   return rows.length ? sec(t('board.rhythm'), `${tn('n.running', rh.total)} · ${t('sched')}`, `${noticeLine(ctx, m, l)}${list(rows)}`) : '';
 }

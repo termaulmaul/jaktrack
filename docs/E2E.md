@@ -180,3 +180,36 @@ Catatan:
 - Di 3D biasa rel terowongan digambar pada kedalamannya, jadi pada peta yang dimiringkan garisnya tampak sedikit di bawah titik stasiun bawah tanah (titik itu tetap di permukaan jalan). Kereta samar di terowongan berada tepat di relnya.
 - Celah sangat pendek pada rel di beberapa tempat (misalnya dekat Cibinong) adalah gedung peta dasar yang berdiri di atas lintasan dan menutupi rel; bukan rel yang terputus.
 - Ride "Dari belakang" dan Terbang bebas dijalankan sekali sesudah perubahan ini: keduanya mulai tanpa galat konsol (`v5-a-sesudah-ride-dari-belakang.png`). Tidak diuji: ride "Kabin", pergantian gaya peta (`style.load`) saat 3D menyala, dan perangkat tanpa WebGL2.
+
+## Navigasi (16 November 2026)
+
+Audit kontrol berpindah tampilan pada lebar 1280, 1100, 768, 430, 390, 360, dan 320 px (Chromium lewat Playwright, bahasa Indonesia, server dev lokal). Tangkapan `var/shots/nav-sebelum-*` dan `nav-sesudah-*`.
+
+| # | Masalah | Lebar | Sesudah |
+|---|---|---|---|
+| 1 | Label tab berdempet ("Jalur" menyentuh "Stasiun") | 320 | Tombol kembali yang tersembunyi tidak lagi memakan 54 px; label 13 px. Lebar teks terpanjang 51 px dalam tab 65 px (EN "Stations", di layar detail) |
+| 2 | Baris chip operator terpotong tanpa tanda bisa digulir | semua | Ponsel: kedua tepi memudar, chip terakhir bisa digulir lepas dari pudaran. Desktop: baris membungkus, tidak ada yang tersembunyi |
+| 3 | Baris chip titik terbang 3D menimpa chip jam | 900 ke atas | Baris mulai setelah chip jam (lebarnya diukur) dan membungkus ke baris kedua |
+| 4 | Chip jam menimpa kartu kontrol | 320 | Pil "Menurut jadwal" tinggal ikon di bawah 375 px (label tetap ada untuk pembaca layar) |
+| 5 | Kartu kontrol 264 px tinggi | tinggi layar sampai 740 px | Dua kolom, 132 px |
+| 6 | "Tiba sebelum" menyentuh tepi pemilih waktu rute | 320 | Lebar tab mengikuti katanya |
+| 7 | Tautan ungu `#6C63F0` sebagai teks: 4,49:1 di putih, 4,12:1 di panel | semua | `#5A51E0` |
+| 8 | Chip aktif hanya dibedakan isi hitam | semua | Juga tebal (600) |
+| 9 | Transisi chip, kartu kontrol, tombol bulat tetap jalan dengan prefers-reduced-motion | semua | Dimatikan |
+
+Tidak dikerjakan: lebar 640–899 px tegak masih memakai tata letak ponsel yang melebar; urutan Tab di desktop tetap peta dulu baru panel (urutan DOM); di ponsel, fokus keyboard ke chip di dalam lembar yang sedang turun jatuh di luar layar.
+
+Kontras (pemeriksa antislop-human): tab tidak aktif `#5E5E63` di `#E2E8EF` 5,23:1; teks chip `#171717` di `#F5F5F7` 16,47:1; chip aktif putih di `#171717` 17,93:1; teks sekunder `#6B6B70` di putih 5,30:1 dan di panel 4,87:1; `#6E6E73` di putih 5,07:1 dan di panel 4,66:1; chip pemutaran `#5A51E0` di `#F0EFFE` 5,01:1; cincin fokus `#6C63F0` (bukan teks, ambang 3:1) di putih 4,49:1, di panel 4,12:1, di lintasan tab 3,64:1, di tombol hitam 4,00:1.
+
+Keyboard (1100 px, 3D menyala): 34 kali Tab melewati kartu kontrol, chip titik terbang, pil jadwal, tab, pencarian, tombol rute, chip operator, dan baris daftar; semuanya menampilkan cincin fokus. Panah kanan di tab pindah ke Jalur; Escape menutup layar rute.
+
+Empat temuan uji fungsional:
+
+| Temuan | Sesudah |
+|---|---|
+| Toggle rute menyebut Skyliner, N'EX, Romancecar | "Termasuk KA antarkota · KA antarkota perlu tiket tersendiri"; lencana "Tiket tersendiri" |
+| Hash rute hanya `#route` | `#route=from:<id>;to:<id>;dep:0810`; muat ulang memulihkan Manggarai → Bogor, berangkat 08.10, 3 pilihan. Empat hash rusak membuka form kosong tanpa galat. "Lokasi saya" tidak pernah ditulis ke tautan |
+| "1 trains" | Bentuk tunggal dipilih di `t()` untuk semua kunci berhitung; 11 kunci EN mendapat bentuk tunggal |
+| Dua "Manggarai" di pencarian | Baris kedua diawali operator: "KAI Commuter" dan "LRT Jakarta"; sama di saran perencana rute |
+
+Chip jam melompat ke "Pemutaran 07.20": tidak tereproduksi. Dicoba pada 1100 dan 390 px: klik tunggal, klik ganda, tiga klik cepat, dua klik saat halaman baru dimuat, tekan lalu seret, dan Enter dua kali. Jam tidak berubah di semua percobaan. Yang teramati: setelah lembar terbuka, fokus ada di penggeser waktu. Dugaan yang belum diuji: tombol panah yang ditekan saat itu menggeser jam.

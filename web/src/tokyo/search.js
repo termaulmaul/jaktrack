@@ -224,6 +224,7 @@ export function createSearch(net, codes = null) {
     line: (i) => net?.lines?.[i],
     lineCode: (i) => get().lineCode(i),
     lineColor: (i) => get().lineColor(i),
+    lineOp: (i, lang) => get().lineOp(i, lang),
     stats: () => get().stats(),
     /** build the index now and run two throwaway queries so the first keystroke is already compiled
      *  (call from requestIdleCallback after the first paint) */
@@ -605,6 +606,7 @@ function buildSearch(net, codes) {
     query, near,
     /** for page.js / tests: line, colour and code lookups the render helpers use */
     line: (i) => ln[i], lineCode, lineColor,
+    lineOp: (i, lang) => opShort(i, lang),
     stats: () => ({ stations: N, complexes: C, latin: LAT.length, cjk: CJK.length, ko: KO.length, codes: CODE.length, lines: fams.length }),
   };
 }
@@ -645,8 +647,18 @@ const lineNames = (search, lines, lang) => [...new Set(lines.map((i) => nameIn(s
 export const otherSpan = (s, lang = 'en') => (s ? `<span lang="${lang === 'ja' ? 'en' : 'ja'}">${esc(s)}</span>` : '');
 const joinSub = (parts) => parts.filter(Boolean).join(' · ');
 
-function stationSub(r, t, lang) {
+/** Stations that share a name in one result list (Manggarai on the KRL and on the LRT are two stations) each get the
+ * operators of their lines as a label; a name that appears once gets ''. rows: [{ name, lines }], opOf(lineIndex) -> name. */
+export function sameNameLabels(rows, opOf) {
+  const key = (r) => String(r?.name ?? '').trim().toLowerCase();
+  const count = new Map();
+  for (const r of rows || []) count.set(key(r), (count.get(key(r)) || 0) + 1);
+  return (rows || []).map((r) => (count.get(key(r)) > 1 ? [...new Set((r.lines || []).map(opOf).filter(Boolean))].join(', ') : ''));
+}
+
+function stationSub(r, t, lang, tag = '') {
   const bits = [];
+  if (tag) bits.push(esc(tag));
   if (r.code) bits.push(esc(r.code));
   if (r.other) bits.push(otherSpan(r.other, lang));
   if (r.others?.length) bits.push(esc(t('search.transfer', { names: r.others.slice(0, 2).join(', ') + (r.others.length > 2 ? ', …' : '') })));
@@ -654,15 +666,15 @@ function stationSub(r, t, lang) {
 }
 /** One station-complex row: data-station = the matched station's id, data-group = the complex (model.groups index).
  * sub = a plain-text second line instead of the default; subHtml = the same as HTML (caller escapes). */
-export function stationRowHTML(search, r, { lang = 'en', t, sub = null, subHtml = null } = {}) {
+export function stationRowHTML(search, r, { lang = 'en', t, sub = null, subHtml = null, tag = '' } = {}) {
   return row({
     attrs: `data-station="${esc(r.id)}" data-group="${r.g}"`,
     cls: 'kr-srow srch-row',
     lead: stationTile(),
     title: r.name,
-    subHtml: subHtml ?? (sub != null ? esc(sub) : stationSub(r, t, lang)),
+    subHtml: subHtml ?? (sub != null ? esc(sub) : stationSub(r, t, lang, tag)),
     right: { html: discs(search, r.lines, lang) },
-    label: `${t('search.stationLabel', { name: r.name })}. ${lineNames(search, r.lines, lang).join(', ')}`,
+    label: `${t('search.stationLabel', { name: r.name })}${tag ? `, ${tag}` : ''}. ${lineNames(search, r.lines, lang).join(', ')}`,
   });
 }
 export function lineRowHTML(search, r, { lang = 'en', t } = {}) {
@@ -683,7 +695,8 @@ export function lineRowHTML(search, r, { lang = 'en', t } = {}) {
 export function renderResults(search, res, { lang = 'en', t } = {}) {
   if (!res?.q) return '';
   const n = (k) => t('search.count', { n: k });
-  const s = res.stations.length ? sec(t('search.stations'), n(res.stations.length), list(res.stations.map((r) => stationRowHTML(search, r, { lang, t })))) : '';
+  const tags = sameNameLabels(res.stations, (i) => search.lineOp?.(i, lang));
+  const s = res.stations.length ? sec(t('search.stations'), n(res.stations.length), list(res.stations.map((r, i) => stationRowHTML(search, r, { lang, t, tag: tags[i] })))) : '';
   const l = res.lines.length ? sec(t('search.lines'), n(res.lines.length), list(res.lines.map((r) => lineRowHTML(search, r, { lang, t })))) : '';
   if (!s && !l) return emptyState({ iconId: 'search', title: t('search.none', { q: res.q }), body: t('search.try'), compact: true });
   return res.lead === 'lines' ? l + s : s + l;

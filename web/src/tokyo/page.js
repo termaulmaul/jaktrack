@@ -6,7 +6,7 @@
 // The feature modules come in through `tokyo:optional` (web/build.mjs): each is a lazy chunk, and a module that does not
 // build is null at runtime, so the page uses its own small fallback instead of failing (docs/ARCHITECTURE.md).
 //
-// Routes: #s=<stationId>  #t=<runKey>  #l=<lineId>  #route[=from:<id>|to:<id>]  #about  #tab=lines|stations
+// Routes: #s=<stationId>  #t=<runKey>  #l=<lineId>  #route[=from:<id>;to:<id>;dep:HHMM]  #about  #tab=lines|stations
 //         (?lang=en|ja|id overrides the language until the switch in About is used)
 // Debug / tests: window.__tokyo = { ready(), stats(), sample(), map, open(type, id), setLang(l), set3d(on), labels(),
 //     live, i18n(), sheet(detent), state }
@@ -24,6 +24,7 @@ import css from './styles.js';
 import { load as LOAD, has as HAS } from 'tokyo:optional';
 import { mountResetButton } from './reset.js';   // the card's Reset view button
 import { MAP_FONT } from './config.js';
+import { routeHash, parseRouteHash } from './route-hash.js';
 import trainArt from './art/train.svg';
 import nightArt from './art/night.svg';
 
@@ -193,7 +194,7 @@ const top = () => S.stack[S.stack.length - 1] || null;
 const screen = () => { const x = top(); return x ? { name: x.t, id: x.id } : { name: S.tab, id: null }; };
 const hashOf = () => {
   const x = top();
-  if (x) return x.t === 'about' ? '#about' : x.t === 'live' ? '#live' : x.t === 'route' && (!x.id || x.id === '1') ? '#route' : `#${KEYS[x.t]}=${encodeURIComponent(x.id)}`;
+  if (x) return x.t === 'about' ? '#about' : x.t === 'live' ? '#live' : x.t === 'route' && (!x.id || x.id === '1') ? '#route' : `#${KEYS[x.t]}=${encodeURIComponent(x.id).replace(/%3A/g, ':').replace(/%3B/g, ';')}`;
   return S.tab === 'home' ? '' : `#tab=${S.tab}`;
 };
 const stateOf = () => ({ tk: 1, tab: S.tab, stack: S.stack.slice() });
@@ -420,16 +421,24 @@ function mountRoute(id) {
   try { S.route?.h?.destroy?.(); } catch { /* fine */ }
   try {
     const h = rv.mountRouteView(el, { ...ctx(), now: NOW, search: S.searchObj || undefined, source: S.source, open: (type, x) => open(type, x),
-      onPlan: () => { if (!isDesktop() && sheet.detent === 'full') sheet.snap('half'); } });
+      onPlan: () => { if (!isDesktop() && sheet.detent === 'full') sheet.snap('half'); },
+      // the picked stations and time go into the hash, so a reload or a shared link brings the route back
+      onState: (x) => {
+        const cur = top(), nid = routeHash(x) || '1';
+        if (cur?.t !== 'route' || cur.id === nid) return;
+        cur.id = nid;
+        if (S.route) S.route.id = nid;
+        try { history.replaceState(stateOf(), '', urlOf()); } catch { /* fine */ }
+      } });
     S.route = { el, h, id };
     applyRouteEnds(id);
   } catch (e) { console.warn('[tokyo] route view', e); S.errors.push(`routeView: ${e?.message || e}`); S.route = null; }
 }
-/** #route=from:<stationId> / to:<stationId> (the station sheet's buttons). */
+/** #route=from:<stationId>;to:<stationId>;dep:0810 (route-hash.js; the station sheet's buttons send one end). */
 function applyRouteEnds(id) {
-  const m = /^(from|to):(.+)$/.exec(id || '');
-  if (!m || !S.route?.h) return;
-  try { (m[1] === 'from' ? S.route.h.setFrom : S.route.h.setTo)?.call(S.route.h, m[2]); } catch (e) { console.warn('[tokyo] route ends', e); }
+  const x = parseRouteHash(id);
+  if (!S.route?.h || !Object.keys(x).length) return;   // '#route', or a broken link: the empty form
+  try { S.route.h.restore(x); } catch (e) { console.warn('[tokyo] route ends', e); }
 }
 function closeRoute() {
   if (!S.route) return;
@@ -2038,6 +2047,8 @@ need('playback').then((pb) => {
   S.pb.onChange(() => { try { S.buses?.refresh?.(); } catch { /* fine */ } });   // simulated buses follow the page clock
   const row = $('#tk-tl');
   if (!row || typeof pb.mountPlayback !== 'function') return;
+  // the 3D chip row starts after this row on desktop (styles.js --tl-w)
+  try { new ResizeObserver(() => $('#app').style.setProperty('--tl-w', `${row.offsetWidth}px`)).observe(row); } catch { /* the CSS fallback width stands */ }
   try {
     S.pbUi = pb.mountPlayback(row, {
       playback: S.pb, t, lang: I.lang, onLang: I.onLang, reduceMotion, isDesktop,

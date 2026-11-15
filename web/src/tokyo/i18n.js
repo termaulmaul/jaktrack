@@ -419,13 +419,13 @@ Object.assign(DICT.en, {
   'rt.title': 'Route', 'rt.open': 'Plan a trip', 'rt.from': 'From', 'rt.to': 'To',
   'rt.from.ph': 'From: station', 'rt.to.ph': 'To: station', 'rt.swap': 'Swap from and to', 'rt.clear': 'Clear',
   'rt.now': 'Now', 'rt.dep': 'Leave at', 'rt.arr': 'Arrive by', 'rt.time': 'Time',
-  'rt.fare': 'Limited express trains', 'rt.fare.sub': 'Skyliner, N’EX, Romancecar and liners need an extra ticket',
+  'rt.fare': 'Include intercity trains', 'rt.fare.sub': 'Intercity (KA) trains need a separate ticket',
   'rt.options': 'Ways to go', 'rt.options.sub': 'Up to 4 changes', 'rt.min': '{n} min', 'rt.hm': '{h} h {m} min',
   'rt.chg.0': 'No change', 'rt.chg.one': '1 change', 'rt.chg': '{n} changes',
   'rt.found': '{n} ways · fastest {dur}', 'rt.fast': 'Fastest', 'rt.few': 'Fewest changes', 'rt.for': 'for {name}', 'rt.stops.one': '1 stop', 'rt.stops': '{n} stops',
   'rt.through': 'Stays on at {name} as the {line}', 'rt.change': 'Change at {name}', 'rt.walk': 'Walk to {name}',
   'rt.walk.start': 'Walk to {name}', 'rt.walk.end': 'Walk to where you are going', 'rt.walk.only': 'Walk',
-  'rt.leave': 'Leave {time}', 'rt.arrive': 'Arrive {time}', 'rt.extra': 'Extra fare', 'rt.ride': '{min} on the train',
+  'rt.leave': 'Leave {time}', 'rt.arrive': 'Arrive {time}', 'rt.extra': 'Separate ticket', 'rt.ride': '{min} on the train',
   'rt.none': 'No way found', 'rt.none.sub': 'Nothing with up to 4 changes in the next 4 hours of the timetable.',
   'rt.same': 'That is the same station', 'rt.pick': 'Pick where you start and where you are going.',
   'rt.loading': 'Reading the timetable', 'rt.fail': 'The timetable did not load. Try again.', 'rt.nextday': 'Last trains have gone: first trains tomorrow',
@@ -457,13 +457,13 @@ Object.assign(DICT.id, {
   'rt.title': 'Rute', 'rt.open': 'Cari rute', 'rt.from': 'Dari', 'rt.to': 'Ke',
   'rt.from.ph': 'Dari: stasiun', 'rt.to.ph': 'Ke: stasiun', 'rt.swap': 'Tukar asal dan tujuan', 'rt.clear': 'Hapus',
   'rt.now': 'Sekarang', 'rt.dep': 'Berangkat', 'rt.arr': 'Tiba sebelum', 'rt.time': 'Jam',
-  'rt.fare': 'Termasuk Limited Express', 'rt.fare.sub': 'Skyliner, N’EX, Romancecar, dan liner perlu tiket tambahan',
+  'rt.fare': 'Termasuk KA antarkota', 'rt.fare.sub': 'KA antarkota perlu tiket tersendiri',
   'rt.options': 'Pilihan rute', 'rt.options.sub': 'Paling banyak 4 kali ganti', 'rt.min': '{n} mnt', 'rt.hm': '{h} jam {m} mnt',
   'rt.chg.0': 'Tanpa ganti kereta', 'rt.chg.one': '1 kali ganti', 'rt.chg': '{n} kali ganti',
   'rt.found': '{n} rute · tercepat {dur}', 'rt.fast': 'Tercepat', 'rt.few': 'Paling sedikit ganti', 'rt.for': 'ke {name}', 'rt.stops.one': '1 stasiun', 'rt.stops': '{n} stasiun',
   'rt.through': 'Tetap di kereta di {name}, lanjut sebagai {line}', 'rt.change': 'Ganti kereta di {name}', 'rt.walk': 'Jalan kaki ke {name}',
   'rt.walk.start': 'Jalan kaki ke {name}', 'rt.walk.end': 'Jalan kaki ke tujuan', 'rt.walk.only': 'Jalan kaki',
-  'rt.leave': 'Berangkat {time}', 'rt.arrive': 'Tiba {time}', 'rt.extra': 'Tiket tambahan', 'rt.ride': '{min} di kereta',
+  'rt.leave': 'Berangkat {time}', 'rt.arrive': 'Tiba {time}', 'rt.extra': 'Tiket tersendiri', 'rt.ride': '{min} di kereta',
   'rt.none': 'Rute tidak ditemukan', 'rt.none.sub': 'Tidak ada rute dengan paling banyak 4 kali ganti dalam 4 jam ke depan di jadwal.',
   'rt.same': 'Itu stasiun yang sama', 'rt.pick': 'Pilih stasiun asal dan tujuan.',
   'rt.loading': 'Membaca jadwal', 'rt.fail': 'Jadwal belum termuat. Coba lagi.', 'rt.nextday': 'Kereta terakhir sudah lewat: kereta pertama besok',
@@ -859,12 +859,23 @@ export function setLang(l, { save = true } = {}) {
 }
 export function onLang(fn) { listeners.add(fn); return () => listeners.delete(fn); }
 
+// EN singular forms for counted strings that had none ("1 trains", "All 1 lines")
+Object.assign(DICT.en, {
+  'board.trains.word.one': 'train', 'bus.word.one': 'bus', 'now.lines.one': 'on {n} line', 'lines.all.one': 'The {n} line',
+  'search.lineStations.one': '{n} station', 'rt.found.one': '{n} way · {dur}', 'nb.more.one': 'The {n} line at {name}',
+  'bus.count.one': '{n} bus, simulated from the timetable (not live)', 'cov.show.one': 'Show {n} line',
+  'lvis.only.aria.one': '{n} train with a live position. See which lines', 'lvis.say.on.one': 'The map shows only the {n} train with a live position',
+});
+
 // ------------------------------------------------------------------ strings
 const fill = (s, vars) => (vars ? String(s).replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? String(vars[k]) : m)) : String(s));
 /** The string for key in the current language (falls back to EN, then the key). Plain text: escape before HTML. */
 const missing = new Set();        // keys asked for that no language has (QA: window.__tokyo.i18n())
 const untranslated = new Set();   // 'ja:key' / 'id:key' that fell back to EN
 export function t(key, vars) {
+  // a count of one reads `<key>.one` where the language has it ("1 train", not "1 trains"); n may be 1 or its text "1"
+  const one = vars && (vars.n === 1 || vars.n === '1') ? `${key}.one` : null;
+  if (one && (DICT[cur]?.[one] != null || (DICT[cur]?.[key] == null && DICT.en[one] != null))) key = one;
   let s = DICT[cur]?.[key];
   if (s == null) {
     s = DICT.en[key];
@@ -874,10 +885,9 @@ export function t(key, vars) {
 }
 /** QA: keys the page asked for that are missing ({missing: [...], untranslated: ['ja:key', ...]}). */
 export const report = () => ({ missing: [...missing], untranslated: [...untranslated] });
-/** Counted string: EN uses `<key>.one` for 1; {n} is formatted with the language's digits grouping. */
+/** Counted string: `<key>.one` for 1 (see t); {n} is formatted with the language's digits grouping. */
 export function tn(key, n, vars = {}) {
-  const k = n === 1 && (DICT[cur]?.[`${key}.one`] ?? (cur === 'en' ? DICT.en[`${key}.one`] : null)) ? `${key}.one` : key;
-  return t(k, { ...vars, n: fmtNum(n) });
+  return t(key, { ...vars, n: fmtNum(n) });   // t() picks `.one`
 }
 export const has = (key) => key in (DICT[cur] || {}) || key in DICT.en;
 

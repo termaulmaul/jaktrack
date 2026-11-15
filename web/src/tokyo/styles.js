@@ -207,4 +207,52 @@ export default `${base}${krl}
   .loading{left:calc(var(--pane-w) + var(--safe-l))}
   .tk-app .toast{left:calc(50% + (var(--pane-w) + var(--safe-l)) / 2)}
 }
+
+/* ---- NAV: the controls that move between views hold from 320 to 1280 px (docs/E2E.md, "Navigasi") ---- */
+/* chips read as pressed by weight too, not by the fill alone */
+.tk-app .chip[aria-pressed="true"]{font-weight:600}
+/* the lavender as text is 4.49:1 on white and 4.12:1 on the panel; this one is 5.6:1 / 5.1:1 */
+.tk-app .kr-link,.tk-app .kr-ghost{color:#5A51E0}
+/* the planner's Now / Leave at / Arrive by: each tab as wide as its word ("Tiba sebelum" ran into the track's edge) */
+.tk-app .rt-when .seg button{flex:1 1 auto;padding:0 8px}
+/* a chip row that scrolls sideways fades at both edges instead of cutting a chip in half ("MRT Jak"); the end
+   padding equals the fade, so the last chip scrolls clear of it */
+.tk-app .chips{padding-right:32px;scroll-padding-inline:var(--pad-x) 32px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 var(--pad-x),#000 calc(100% - 32px),transparent);mask-image:linear-gradient(90deg,transparent,#000 var(--pad-x),#000 calc(100% - 32px),transparent)}
+/* narrow phones: the hidden back button gives its 54 px to the tabs, the tab labels drop to 13 px, and the
+   Scheduled pill keeps its clock icon only (the button keeps its label for assistive tech) */
+@media (max-width:374px){
+.tk-app .tk-sched .tk-pill{padding:0 12px}
+.tk-app .tk-sched .tk-pill>span{display:none}
+}
+@media (max-width:359px){
+.tk-app .topbar{left:calc(10px + var(--safe-l));right:calc(10px + var(--safe-r));gap:6px}
+.tk-app:not([data-detail]) .topbar .back{display:none}
+.tk-app .seg button{font-size:13px}
+.tk-app .rt-when .seg button{font-size:13px;padding:0 6px}
+.tk-app .ctrls{right:calc(10px + var(--safe-r))}
+}
+/* short phones: the control card (six buttons since buses and CCTV) goes two abreast, 132 px tall instead of 264;
+   the hairlines are shadows, so hidden buttons leave no stray line */
+@media (max-width:899px) and (max-height:740px){
+.tk-app #c3dcard{grid-template-columns:44px 44px}
+.tk-app #c3dcard button,.tk-app #c3dcard button:not([hidden])~button:not([hidden]){border-top:0;box-shadow:0 -.5px 0 var(--realm-line),-.5px 0 0 var(--realm-line)}
+.tk-app .tk-tl{max-width:calc(100% - 128px - var(--safe-l))}
+.tk-app .tk3d-ctl{right:calc(110px + var(--safe-r))}
+}
+/* desktop: the pane's chip rows wrap (a mouse wheel cannot scroll them sideways), and the 3D chip row starts after
+   the clock chip (--tl-w, measured in page.js) and wraps under itself instead of running into it */
+@media (min-width:900px){
+.tk-app .chips{flex-wrap:wrap;overflow:visible;padding-right:var(--pad-x);-webkit-mask-image:none;mask-image:none}
+}
+/* with a mouse the wrapped rows sit 6 px apart, not 12: the chip keeps its 32 px pill in a 38 px box */
+@media (min-width:900px) and (hover:hover) and (pointer:fine){
+.tk-app .chips .chip{height:38px;border-top-width:3px;border-bottom-width:3px}
+}
+@media (min-width:900px){
+.tk-app .tk3d-ctl{left:calc(var(--pane-w) + 20px + var(--tl-w,124px));flex-wrap:wrap;justify-content:flex-start;overflow:visible;pointer-events:none}
+.tk-app .tk3d-ctl>*{pointer-events:auto}
+}
+@media (prefers-reduced-motion:reduce){
+.tk-app .chip,.tk-app .ccard button,.tk-app .round,.tk-app .tk-rbtn,.tk-app .xbtn,.tk-app .act,.tk-app .btn,.tk-app .row,.tk-app .tk3d-chip>span{transition:none}
+}
 `;

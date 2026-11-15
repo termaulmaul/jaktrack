@@ -16,7 +16,7 @@
 import { createPlanner, routeGeoJSON, routeBounds, addDays } from './route.js';
 import { loadRuns as ttLoadRuns } from './tt.js';
 import { calendarAt } from './calendar.js';
-import { createSearch } from './search.js';
+import { createSearch, sameNameLabels } from './search.js';
 import { t, tn, title, lang as curLang, clock } from './i18n.js';
 import { lineChip, typeChip } from './types.js';
 import { esc } from '../app/format.js';
@@ -327,7 +327,16 @@ export function mountRouteView(el, ctx = {}) {
     mode: 'now', time: '', extraFare: false,
     busy: false, error: '', options: null, open: 0, seq: 0, loc: null,
   };
-  const keep = () => { last = { st, net, at: Date.now() }; };
+  // the page mirrors the picked stations and time into the URL (never "My location": only station ids)
+  const idOf = (pl) => (pl && pl.s != null ? net?.stations?.[pl.s]?.id : null) || null;
+  let told = null;
+  const keep = () => {
+    last = { st, net, at: Date.now() };
+    if (typeof ctx.onState !== 'function') return;
+    const pub = { from: idOf(st.from), to: idOf(st.to), mode: st.mode, time: st.mode === 'now' ? '' : st.time };
+    const sig = JSON.stringify(pub);
+    if (sig !== told) { told = sig; try { ctx.onState(pub); } catch (e) { console.warn('[route] onState', e); } }
+  };
   // the page clock: a playback runs it away from real time (ctx.now = ms at mount, or a function); real time otherwise
   const skew = typeof ctx.now === 'number' && Math.abs(ctx.now - Date.now()) > 5000 ? ctx.now - Date.now() : 0;
   const clockMs = () => (typeof ctx.now === 'function' ? ctx.now() : Date.now() + skew);
@@ -409,12 +418,13 @@ export function mountRouteView(el, ctx = {}) {
       rows.push(`<button type="button" class="row" data-rt-here="${st.focus}">${`<span class="itile" aria-hidden="true">${PIN_SVG}</span>`}<span class="rt"><b>${esc(t('rt.here'))}</b><span>${esc(st.loc === 'wait' ? t('rt.here.wait') : st.loc === 'no' ? t('rt.here.no') : t('rt.here.sub'))}</span></span></button>`);
     } else if (search) {
       const res = search.query(q, curLang(), 6);
-      for (const r of res.stations) {
+      const tags = sameNameLabels(res.stations, (i) => search.lineOp?.(i, curLang()));
+      for (const [ri, r] of res.stations.entries()) {
         const seen = new Set(), chips = [];
         for (const li of r.lines) { const line = net.lines[li]; if (line && !seen.has(line.color + line.code) && chips.length < 5) { seen.add(line.color + line.code); chips.push(lineChip(line, curLang(), { size: 'xs' })); } }
         // the other-script name tagged with its language (浅草 on an EN page is Japanese)
         const other = r.other ? `<span lang="${curLang() === 'ja' ? 'en' : 'ja'}">${esc(r.other)}</span>` : '';
-        const sub = [r.code ? esc(r.code) : '', other].filter(Boolean).join(' · ');
+        const sub = [tags[ri] ? esc(tags[ri]) : '', r.code ? esc(r.code) : '', other].filter(Boolean).join(' · ');
         rows.push(`<button type="button" class="row" data-rt-pick="${r.s}"><span class="rt"><b>${esc(r.name)}</b>${sub ? `<span>${sub}</span>` : ''}</span><span class="rr"><span class="rt-chips">${chips.join('')}</span></span></button>`);
       }
       if (!rows.length) return `<p class="fine">${esc(t('search.none', { q }))}</p>`;
@@ -633,6 +643,14 @@ export function mountRouteView(el, ctx = {}) {
     state: st,
     setFrom(v) { setPlace('from', resolve(v)); },
     setTo(v) { setPlace('to', resolve(v)); },
+    /** A shared link's state: { from?, to?, mode?: 'dep' | 'arr', time?: 'HH:MM' }; an unknown station leaves its field empty. */
+    restore(x = {}) {
+      if (x.from != null) { st.from = resolve(x.from); st.fromText = placeText(st.from); }
+      if (x.to != null) { st.to = resolve(x.to); st.toText = placeText(st.to); }
+      if ((x.mode === 'dep' || x.mode === 'arr') && /^\d{2}:\d{2}$/.test(x.time || '')) { st.mode = x.mode; st.time = x.time; }
+      st.focus = null;
+      plan();
+    },
     plan,
     rerender() { st.fromText = st.focus === 'from' ? st.fromText : placeText(st.from); st.toText = st.focus === 'to' ? st.toText : placeText(st.to); render(); },
     destroy() {
